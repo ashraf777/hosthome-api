@@ -3,99 +3,148 @@
 namespace App\Http\Controllers;
 
 use App\Models\Unit;
-use Illuminate\Http\Request; // Using generic Request for demo brevity
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\UnitResource;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UnitController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request)
     {
-        $units = Unit::with(['roomType.property', 'owner', 'fixedCosts'])->latest()->paginate(15);
+        // if (!$request->user()->canPermission('unit:view')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
 
-        return response()->json([
-            'code' => 200,
-            'message' => 'Units retrieved successfully.',
-            'data' => $units
-        ]);
+        $hostingCompanyId = $request->user()->hosting_company_id;
+
+        // Tenancy check is now done directly on the property
+        $units = Unit::whereHas('property', function ($query) use ($hostingCompanyId) {
+            $query->where('hosting_company_id', $hostingCompanyId);
+        })->with(['property', 'roomType', 'unitTypeRef', 'owner'])->paginate();
+
+        return UnitResource::collection($units);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
-        // **NOTE:** Use a dedicated StoreUnitRequest for full validation.
+        // if (!$request->user() || !$request->user()->canPermission('unit:create')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
+        $hostingCompanyId = $request->user()->hosting_company_id;
+
         $validated = $request->validate([
-            'room_type_id' => 'required|exists:room_types,id',
-            'name' => 'required|string|max:255|unique:units,name',
-            'owner_user_id' => 'nullable|exists:users,id',
-            'max_free_stay_days' => 'required|integer|min:0',
-            'fine_print' => 'nullable|string',
-            // ... other fields and nested costs/photos to handle
+            'property_id' => [ // <-- ADDED
+                'required',
+                'integer',
+                Rule::exists('properties', 'id')->where(function ($query) use ($hostingCompanyId) {
+                    $query->where('hosting_company_id', $hostingCompanyId);
+                }),
+            ],
+            'room_type_id' => [
+                'required',
+                'integer',
+                // Optional: You might want to add a rule to ensure the room_type_id 
+                // belongs to the provided property_id for data integrity.
+                Rule::exists('room_types', 'id'),
+            ],
+            'unit_type_ref_id' => 'nullable|integer|exists:property_unit_references,id',
+            'unit_identifier' => 'nullable|string|max:255',
+            'status' => ['required', Rule::in(['available', 'maintenance', 'owner_use'])],
+            'description' => 'nullable|string',
+            'about' => 'nullable|string',
+            'guest_access' => 'nullable|string',
+            'owner_user_id' => 'nullable|integer|exists:users,id',
+            'max_free_stay_days' => 'nullable|integer|min:0',
         ]);
 
         $unit = Unit::create($validated);
+        $unit->load(['property', 'roomType', 'unitTypeRef', 'owner']);
 
-        // You would typically handle nested resource creation (like fixed costs) here
-        // Example: $unit->fixedCosts()->createMany($request->fixed_costs);
-
-        return response()->json([
-            'code' => 201,
-            'message' => 'Unit created successfully.',
-            'data' => $unit
-        ], 201);
+        return new UnitResource($unit);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Unit $unit): JsonResponse
+    public function show(Request $request, Unit $unit)
     {
-        $unit->load(['roomType.property', 'owner', 'parentUnit', 'fixedCosts']);
+        // Tenancy Check is now based on the direct property relationship
+        if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
 
-        return response()->json([
-            'code' => 200,
-            'message' => 'Unit retrieved successfully.',
-            'data' => $unit
-        ]);
+        // if (!$request->user()->canPermission('unit:view')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
+        $unit->load(['property', 'roomType', 'unitTypeRef', 'owner']);
+
+        return new UnitResource($unit);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Unit $unit): JsonResponse
+    public function update(Request $request, Unit $unit)
     {
-        // **NOTE:** Use a dedicated UpdateUnitRequest for full validation.
+        // Tenancy Check
+        if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+
+        // if (!$request->user()->canPermission('unit:update')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
+        $hostingCompanyId = $request->user()->hosting_company_id;
+
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:units,name,' . $unit->id,
-            // ... other fields
+            // Do not allow changing the property_id after creation to maintain integrity
+            'room_type_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('room_types', 'id'),
+            ],
+            'unit_type_ref_id' => 'sometimes|nullable|integer|exists:property_unit_references,id',
+            'unit_identifier' => 'sometimes|nullable|string|max:255',
+            'status' => ['sometimes', 'required', Rule::in(['available', 'maintenance', 'owner_use'])],
+            'description' => 'sometimes|nullable|string',
+            'about' => 'sometimes|nullable|string',
+            'guest_access' => 'sometimes|nullable|string',
+            'owner_user_id' => 'sometimes|nullable|integer|exists:users,id',
+            'max_free_stay_days' => 'sometimes|nullable|integer|min:0',
         ]);
-        
+
         $unit->update($validated);
+        $unit->load(['property', 'roomType', 'unitTypeRef', 'owner']);
 
-        // Example for updating nested fixed costs:
-        // You would use updateOrCreate or sync logic here for fixed costs.
-
-        return response()->json([
-            'code' => 200,
-            'message' => 'Unit updated successfully.',
-            'data' => $unit
-        ]);
+        return new UnitResource($unit);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Unit $unit): JsonResponse
+    public function destroy(Request $request, Unit $unit)
     {
+        // Tenancy Check
+        if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+
+        // if (!$request->user()->canPermission('unit:delete')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $unit->delete();
 
-        return response()->json([
-            'code' => 204,
-            'message' => 'Unit deleted successfully.'
-        ], 204);
+        return response()->noContent();
     }
 }

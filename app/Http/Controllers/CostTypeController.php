@@ -8,13 +8,22 @@ use Illuminate\Support\Str;
 
 class CostTypeController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        // CORRECT: Permission Check
+        if (!$request->user()->canPermission('cost-type:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
         return response()->json(['data' => CostType::all()]);
     }
 
     public function store(Request $request): JsonResponse
     {
+        // CORRECT: Permission Check
+        if (!$request->user()->canPermission('cost-type:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:50|unique:cost_types,name',
         ]);
@@ -25,8 +34,12 @@ class CostTypeController extends Controller
         return response()->json(['data' => $costType], 201);
     }
     
-    public function show(CostType $costType): JsonResponse
+    public function show(Request $request, CostType $costType): JsonResponse
     {
+        // CORRECT: Permission Check
+        if (!$request->user()->canPermission('cost-type:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
         return response()->json(['data' => $costType]);
     }
     

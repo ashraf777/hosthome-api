@@ -1,42 +1,76 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class RoomType extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    protected $guarded = [];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'hosting_company_id',
+        'property_id',
+        'name',
+        'max_adults',
+        'max_children',
+        'size',
+        'weekday_price',
+        'weekend_price',
+        'status',
+    ];
 
-    // Relationships
-    public function property(): BelongsTo
+    /**
+     * Get the hosting company that owns the room type.
+     */
+    public function hostingCompany(): BelongsTo
+    {
+        return $this->belongsTo(HostingCompany::class);
+    }
+
+    public function property(): BelongsTo // <-- CORRECTED
     {
         return $this->belongsTo(Property::class);
     }
-    
-    public function units(): HasMany
+
+    /**
+     * The properties that use this room type.
+     */
+    public function properties(): BelongsToMany
     {
-        return $this->hasMany(Unit::class);
-    }
-    
-    public function amenities(): BelongsToMany // Many-to-Many via pivot table
-    {
-        return $this->belongsToMany(Amenity::class, 'room_type_amenity');
+        return $this->belongsToMany(Property::class, 'property_room_type');
     }
 
+    /**
+     * Get the photos for the room type.
+     */
     public function photos(): HasMany
     {
         return $this->hasMany(RoomTypePhoto::class);
     }
 
-    public function bedArrangements(): HasMany
+    /**
+     * Get the amenities for the room type.
+     */
+    public function amenities(): BelongsToMany
     {
-        return $this->hasMany(UnitBedArrangement::class);
+        return $this->belongsToMany(Amenity::class, 'room_type_amenities');
+    }
+
+    /**
+     * Get the units for the room type.
+     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(Unit::class);
     }
 }

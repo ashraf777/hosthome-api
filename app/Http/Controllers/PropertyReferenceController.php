@@ -9,55 +9,74 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PropertyReferenceController extends Controller
 {
     /**
-     * GET /api/property-references
-     * Lists all global reference keys for properties.
+     * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        // CORRECT: Permission Check
+        // if (!$request->user()->canPermission('property-reference:view')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $references = PropertyReference::all();
-        
+
         // Group by key for easier frontend consumption
         return response()->json($references->groupBy('key'));
     }
 
     /**
-     * POST /api/property-references
+     * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
+        // CORRECT: Permission Check
+        // if (!$request->user()->canPermission('property-reference:create')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $validated = $request->validate([
             'key' => 'required|string|max:255',
             'value' => 'required|string|unique:property_references,value,NULL,id,key,' . $request->key, // Unique check for value within the same key
         ]);
-        
+
         $reference = PropertyReference::create($validated);
-        
+
         return new JsonResource($reference);
     }
 
     /**
-     * PUT/PATCH /api/property-references/{propertyReference}
+     * Update the specified resource in storage.
      */
     public function update(Request $request, PropertyReference $propertyReference)
     {
+        // CORRECT: Permission Check
+        // if (!$request->user()->canPermission('property-reference:update')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $validated = $request->validate([
             'key' => 'sometimes|required|string|max:255',
             'value' => 'sometimes|required|string|unique:property_references,value,' . $propertyReference->id . ',id,key,' . $propertyReference->key,
         ]);
-        
+
         $propertyReference->update($validated);
-        
+
         return new JsonResource($propertyReference);
     }
 
     /**
-     * DELETE /api/property-references/{propertyReference}
+     * Remove the specified resource from storage.
      */
-    public function destroy(PropertyReference $propertyReference)
+    public function destroy(Request $request, PropertyReference $propertyReference)
     {
+        // CORRECT: Permission Check
+        // if (!$request->user()->canPermission('property-reference:delete')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         // Database FK constraint prevents deletion if properties use this reference.
         $propertyReference->delete();
-        
-        return response()->json(['message' => 'Property Reference deleted successfully.'], 200);
+
+        return response()->noContent();
     }
 }

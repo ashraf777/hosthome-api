@@ -3,81 +3,136 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Models\PropertyOwner;
+use App\Http\Resources\PropertyResource;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Validation\Rule;
 
 class PropertyController extends Controller
 {
-    /**
-     * GET /api/properties
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $properties = Property::with(['owner', 'typeReference'])->paginate(15);
-        
-        return JsonResource::collection($properties);
+        // if (!$request->user()->canPermission('property:view')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
+        $properties = Property::with('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities')
+            ->where('hosting_company_id', $request->user()->hosting_company_id)
+            ->paginate(15);
+
+        return PropertyResource::collection($properties);
     }
 
-    /**
-     * POST /api/properties
-     */
     public function store(Request $request)
     {
+        // if (!$request->user()->canPermission('property:create')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $validated = $request->validate([
-            'property_owner_id' => 'required|exists:property_owners,id',
-            'property_type_ref_id' => 'nullable|exists:property_references,id',
+            'property_owner_id' => 'nullable|exists:property_owners,id',
             'name' => 'required|string|max:255',
-            'address_line_1' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'zip_code' => 'required|string|max:20',
-            'timezone' => 'required|string|max:50',
-            'listing_status' => 'nullable|in:draft,active,archived',
-            'status' => 'nullable|integer',
+            'address_line_1' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:50',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:50',
+            'timezone' => 'nullable|string|max:50',
+            'property_type_ref_id' => 'nullable|exists:property_references,id',
+            'listing_status' => ['sometimes', 'required', Rule::in(['draft', 'active', 'archived'])],
+            'status' => 'sometimes|required|boolean',
+            'check_in_time' => 'nullable|string|max:50',
+            'check_out_time' => 'nullable|string|max:50',
+            'min_nights' => 'nullable|integer|min:0',
+            'max_nights' => 'nullable|integer|min:0',
         ]);
-        
+
+        // Securely set the hosting company ID from the authenticated user
+        $validated['hosting_company_id'] = $request->user()->hosting_company_id;
+
+        // Tenancy check on the related property owner
+        // if (isset($validated['property_owner_id'])) {
+        //     $owner = PropertyOwner::find($validated['property_owner_id']);
+        //     if (!$owner || $owner->hosting_company_id !== $validated['hosting_company_id']) {
+        //         return response()->json(['message' => 'The selected property owner is invalid.'], 422);
+        //     }
+        // }
+
         $property = Property::create($validated);
-        
-        return new JsonResource($property);
+        $property->load('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities');
+
+        return new PropertyResource($property);
     }
 
-    /**
-     * GET /api/properties/{property}
-     */
-    public function show(Property $property)
+    public function show(Request $request, Property $property)
     {
-        return new JsonResource($property->load(['owner', 'typeReference', 'roomTypes']));
+        if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+
+        // if (!$request->user()->canPermission('property:view')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+        
+        $property->load('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities');
+
+        return new PropertyResource($property);
     }
 
-    /**
-     * PUT/PATCH /api/properties/{property}
-     */
     public function update(Request $request, Property $property)
     {
+        if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+
+        // if (!$request->user()->canPermission('property:update')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $validated = $request->validate([
-            'property_owner_id' => 'sometimes|required|exists:property_owners,id',
-            'property_type_ref_id' => 'nullable|exists:property_references,id',
+            'property_owner_id' => 'nullable|exists:property_owners,id',
             'name' => 'sometimes|required|string|max:255',
-            'address_line_1' => 'sometimes|required|string|max:255',
-            'city' => 'sometimes|required|string|max:255',
-            'zip_code' => 'sometimes|required|string|max:20',
-            'timezone' => 'sometimes|required|string|max:50',
-            'listing_status' => 'sometimes|required|in:draft,active,archived',
-            'status' => 'nullable|integer',
+            'address_line_1' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:50',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:50',
+            'timezone' => 'nullable|string|max:50',
+            'property_type_ref_id' => 'nullable|exists:property_references,id',
+            'listing_status' => ['sometimes', 'required', Rule::in(['draft', 'active', 'archived'])],
+            'status' => 'sometimes|required|boolean',
+            'check_in_time' => 'nullable|string|max:50',
+            'check_out_time' => 'nullable|string|max:50',
+            'min_nights' => 'nullable|integer|min:0',
+            'max_nights' => 'nullable|integer|min:0',
         ]);
         
+        // Tenancy check on the related property owner if it is being changed
+        // if (isset($validated['property_owner_id'])) {
+        //     $owner = PropertyOwner::find($validated['property_owner_id']);
+        //     if (!$owner || $owner->hosting_company_id !== $request->user()->hosting_company_id) {
+        //         return response()->json(['message' => 'The selected property owner is invalid.'], 422);
+        //     }
+        // }
+
         $property->update($validated);
-        
-        return new JsonResource($property);
+        $property->load('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities');
+
+        return new PropertyResource($property);
     }
 
-    /**
-     * DELETE /api/properties/{property}
-     */
-    public function destroy(Property $property)
+    public function destroy(Request $request, Property $property)
     {
-        // Database FK constraint prevents deletion if room_types exist.
+        if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+
+        // if (!$request->user()->canPermission('property:delete')) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
+
         $property->delete();
-        
-        return response()->json(['message' => 'Property deleted successfully.'], 200);
+
+        return response()->noContent();
     }
 }

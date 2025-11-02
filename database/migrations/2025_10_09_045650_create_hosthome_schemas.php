@@ -138,7 +138,7 @@ return new class extends Migration
         // 11. Property_References (LOOKUP: MUST BE CREATED BEFORE PROPERTIES)
         Schema::create('property_references', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
+            $table->string('key');
             $table->string('value');
             $table->timestamps();
         });
@@ -173,6 +173,7 @@ return new class extends Migration
             $table->string('full_name');
             $table->string('email')->unique();
             $table->tinyInteger('status')->default(0);
+            $table->foreignId('hosting_company_id');
             $table->timestamps();
         });
 

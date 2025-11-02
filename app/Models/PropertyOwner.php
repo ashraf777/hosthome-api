@@ -13,6 +13,7 @@ class PropertyOwner extends Model
         'full_name',
         'email',
         'status', // tinyInteger default 0
+        'hosting_company_id',
     ];
 
     protected $casts = [

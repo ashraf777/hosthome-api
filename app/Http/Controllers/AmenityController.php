@@ -1,51 +1,69 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
+use App\Http\Resources\AmenityResource;
 use App\Models\Amenity;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 
 class AmenityController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        $amenities = Amenity::with('category')->get();
-        return response()->json(['data' => $amenities]);
+        return AmenityResource::collection(Amenity::with('amenityReference')->get());
     }
 
-    public function store(Request $request): JsonResponse
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:amenities,name',
-            'amenity_category_id' => 'required|exists:amenity_categories,id',
-            'icon' => 'nullable|string|max:50',
+        $validatedData = $request->validate([
+            'amenities_reference_id' => 'required|exists:amenities_references,id',
+            'specific_name' => 'required|string|max:255',
+            'status' => 'required|integer',
         ]);
 
-        $amenity = Amenity::create($validated);
-        return response()->json(['data' => $amenity], 201);
+        $amenity = Amenity::create($validatedData);
+        $amenity->load('amenityReference');
+        return new AmenityResource($amenity);
     }
 
-    public function show(Amenity $amenity): JsonResponse
+    /**
+     * Display the specified resource.
+     */
+    public function show(Amenity $amenity)
     {
-        $amenity->load('category');
-        return response()->json(['data' => $amenity]);
+        $amenity->load('amenityReference');
+        return new AmenityResource($amenity);
     }
 
-    public function update(Request $request, Amenity $amenity): JsonResponse
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Amenity $amenity)
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:100|unique:amenities,name,' . $amenity->id,
-            'amenity_category_id' => 'sometimes|exists:amenity_categories,id',
-            'icon' => 'nullable|string|max:50',
+        $validatedData = $request->validate([
+            'amenities_reference_id' => 'sometimes|required|exists:amenities_references,id',
+            'specific_name' => 'sometimes|required|string|max:255',
+            'status' => 'sometimes|required|integer',
         ]);
-        
-        $amenity->update($validated);
-        return response()->json(['data' => $amenity]);
+
+        $amenity->update($validatedData);
+        $amenity->load('amenityReference');
+        return new AmenityResource($amenity);
     }
 
-    public function destroy(Amenity $amenity): JsonResponse
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Amenity $amenity)
     {
         $amenity->delete();
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

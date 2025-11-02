@@ -1,24 +1,40 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Amenity extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'amenities_reference_id',
+        'specific_name',
+        'status',
+    ];
 
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(AmenityCategory::class, 'amenity_category_id');
-    }
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'status' => 'integer',
+    ];
 
-    public function roomTypes(): BelongsToMany
+    /**
+     * Get the amenity reference that the amenity belongs to.
+     */
+    public function amenityReference(): BelongsTo
     {
-        return $this->belongsToMany(RoomType::class, 'room_type_amenity');
+        return $this->belongsTo(AmenityReference::class, 'amenities_reference_id');
     }
 }

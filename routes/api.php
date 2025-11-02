@@ -15,20 +15,30 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PropertyOwnerController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyReferenceController;
+use App\Http\Controllers\ChannelController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\PricingRuleController;
+use App\Http\Controllers\AvailabilityController;
 
 use App\Http\Controllers\RoomTypeController;
+use App\Http\Controllers\RoomTypePhotoController;
 use App\Http\Controllers\UnitController;
+
 use App\Http\Controllers\AmenityController;
-use App\Http\Controllers\PropertyCategoryController;
-use App\Http\Controllers\AmenityCategoryController;
+use App\Http\Controllers\AmenityReferenceController;
+use App\Http\Controllers\PropertyAmenityController;
+use App\Http\Controllers\RoomTypeAmenityController;
+
 use App\Http\Controllers\CostTypeController;
+use App\Http\Controllers\SeoMetadataController;
 
 // --- PUBLIC AUTH ROUTES (NO MIDDLEWARE) ---
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+
 // --- PROTECTED ROUTES ---
-// 'api.token.check' handles all authentication, status, and tenant scoping
-Route::middleware(['api.token.check'])->group(function () {
+// All routes within this group require a valid API token.
+Route::middleware('api.token.check')->group(function () {
 
     // --- USER SELF-MANAGEMENT ---
     Route::get('user', [UserController::class, 'show']);
@@ -36,50 +46,46 @@ Route::middleware(['api.token.check'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 
     // --- RBAC MANAGEMENT ENDPOINTS (Requires Authorization/Permission Checks) ---
-    // 1. Permissions (Read-Only Lookup)
-    // The 'can' middleware will check if the user's role has the 'role:manage' permission.
     Route::get('permissions', [PermissionController::class, 'index']);
-    // 2. Roles (CRUD + Sync)
-    Route::prefix('roles')->group(function () {
-        Route::get('/', [RoleController::class, 'index']);
-        Route::post('/', [RoleController::class, 'store']);
-        Route::put('/{role}', [RoleController::class, 'update']);
-        Route::post('/{role}/sync-permissions', [RoleController::class, 'syncPermissions']);
-    });
-    // 3. User Management (Staff/Admin)
-    Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
-        Route::put('/{user}/role', [UserController::class, 'updateRole']);
-    });
+    Route::apiResource('roles', RoleController::class)->except(['destroy']);
+    Route::post('roles/{role}/sync-permissions', [RoleController::class, 'syncPermissions']);
+    Route::get('users', [UserController::class, 'index']);
+    Route::put('users/{user}/role', [UserController::class, 'updateRole']);
 
-    // 4. Country (Read-Only Lookup)
+    // --- PLATFORM-LEVEL RESOURCES (Typically for Super Admin) ---
     Route::get('countries', [CountryController::class, 'index']);
-    // 5. Plans (CRUD for creating/managing subscription tiers)
-    Route::resource('plans', PlanController::class)->except(['show']);
-    // 6. HostingCompany (Management of client accounts/tenants)
-    Route::resource('hosting-companies', HostingCompanyController::class);
-    // 7. Subscriptions (Billing records)
-    // Assuming subscriptions are handled by a separate process (e.g., webhook)
+    Route::apiResource('plans', PlanController::class)->except(['show']);
+    Route::apiResource('hosting-companies', HostingCompanyController::class);
     Route::get('hosting-companies/{hostingCompany}/subscriptions', [SubscriptionController::class, 'index']);
     Route::post('hosting-companies/{hostingCompany}/subscriptions', [SubscriptionController::class, 'store']);
-    // 8. Property Owners (CRUD)
-    Route::resource('property-owners', PropertyOwnerController::class);
-    // 9. Properties (CRUD)
-    Route::resource('properties', PropertyController::class);
-    // 10. Property References (Lookup Data CRUD - Admin only)
-    Route::resource('property-references', PropertyReferenceController::class)->except(['show']);
+
+    // --- HOSTING COMPANY-LEVEL RESOURCES (Tenant-scoped) ---
+    Route::apiResource('property-owners', PropertyOwnerController::class);
+    Route::apiResource('properties', PropertyController::class);
+    Route::post('properties/{property}/room-types/{room_type}', [RoomTypeController::class, 'assignToProperty']);
+    Route::delete('properties/{property}/room-types/{room_type}', [RoomTypeController::class, 'removeFromProperty']);
+    Route::apiResource('property-references', PropertyReferenceController::class)->except(['show']);
+    Route::apiResource('channels', ChannelController::class);
+    Route::apiResource('bookings', BookingController::class);
+    Route::apiResource('pricing-rules', PricingRuleController::class);
+    Route::get('availability', [AvailabilityController::class, 'getAvailability']);
+
+    Route::get('properties/{property}/room-types', [RoomTypeController::class, 'indexByProperty']);
+    Route::apiResource('room-types', RoomTypeController::class);
+    Route::apiResource('room-types.photos', RoomTypePhotoController::class)->except(['update']);
+    Route::post('room-types/{room_type}/photos/{photo}', [RoomTypePhotoController::class, 'update'])->name('room-types.photos.update');
+    Route::apiResource('units', UnitController::class);
+    
+    Route::apiResource('amenities', AmenityController::class);
+    Route::apiResource('amenities-references', AmenityReferenceController::class);
+    Route::post('properties/{property}/amenities', [PropertyAmenityController::class, 'store']);
+    Route::post('room-types/{room_type}/amenities', [RoomTypeAmenityController::class, 'store']);
+
+    Route::apiResource('cost-types', CostTypeController::class)->only(['index', 'show']);
+    Route::get('seo-metadata', [SeoMetadataController::class, 'show']);
+    Route::post('seo-metadata', [SeoMetadataController::class, 'store']);
+    Route::put('seo-metadata/{seoMetadata}', [SeoMetadataController::class, 'update']);
 });
-
-// CORE PMS RESOURCES (Full CRUD)
-// Route::apiResource('properties', PropertyController::class);
-Route::apiResource('room-types', RoomTypeController::class);
-Route::apiResource('units', UnitController::class);
-
-// AUXILIARY/LOOKUP RESOURCES (Read-only/Limited CRUD for Admins)
-Route::apiResource('amenities', AmenityController::class);
-Route::apiResource('property-categories', PropertyCategoryController::class)->only(['index', 'show']);
-Route::apiResource('amenity-categories', AmenityCategoryController::class)->only(['index', 'show']);
-Route::apiResource('cost-types', CostTypeController::class)->only(['index', 'show']);
 
 // Health Check Endpoint
 Route::get('/ping', function () {
@@ -88,18 +94,5 @@ Route::get('/ping', function () {
         'message' => 'Hosthome API',
         'api_version' => '1.0.0',
         'build_version' => '1'
-    ]);
-});
-
-Route::get('test-permissions', function (Request $request) {
-    $user = \App\Models\User::where('email', 'jane.admin@hosthome.test')->first();
-    // dd($user);
-    return response()->json([
-        'user_role' => optional($user->role)->name,
-        // 1. Check the raw list of permissions (permissions() method)
-        'all_permissions' => $user->permissions->toArray(), 
-        // 2. Check a specific permission (can() method)
-        'can_view_properties' => $user->can('property:view'),
-        'can_delete_users' => $user->can('user:delete'), // Should be false
     ]);
 });

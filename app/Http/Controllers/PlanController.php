@@ -12,8 +12,13 @@ class PlanController extends Controller
      * GET /api/plans
      * Lists all subscription plans.
      */
-    public function index()
+    public function index(Request $request)
     {
+        // CORRECT: Super Admin Permission Check
+        if (!$request->user()->canPermission('plan:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $plans = Plan::orderBy('price_monthly')->get();
         return JsonResource::collection($plans);
     }
@@ -24,6 +29,11 @@ class PlanController extends Controller
      */
     public function store(Request $request)
     {
+        // CORRECT: Super Admin Permission Check
+        if (!$request->user()->canPermission('plan:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|unique:plans,name|max:255',
             'price_monthly' => 'required|numeric|min:0',
@@ -40,8 +50,12 @@ class PlanController extends Controller
      * GET /api/plans/{plan}
      * Shows a single plan.
      */
-    public function show(Plan $plan)
+    public function show(Request $request, Plan $plan)
     {
+        // CORRECT: Super Admin Permission Check
+        if (!$request->user()->canPermission('plan:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
         return new JsonResource($plan);
     }
     
@@ -51,6 +65,11 @@ class PlanController extends Controller
      */
     public function update(Request $request, Plan $plan)
     {
+        // CORRECT: Super Admin Permission Check
+        if (!$request->user()->canPermission('plan:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'sometimes|required|unique:plans,name,' . $plan->id . '|max:255',
             'price_monthly' => 'sometimes|required|numeric|min:0',
@@ -67,8 +86,13 @@ class PlanController extends Controller
      * DELETE /api/plans/{plan}
      * Deletes a plan. Fails if active subscriptions reference it.
      */
-    public function destroy(Plan $plan)
+    public function destroy(Request $request, Plan $plan)
     {
+        // CORRECT: Super Admin Permission Check
+        if (!$request->user()->canPermission('plan:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         // Database foreign key constraint will prevent deletion if subscriptions exist.
         // If soft deleting is needed, the migration should be updated.
         $plan->delete();
