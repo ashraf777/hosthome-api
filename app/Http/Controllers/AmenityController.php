@@ -24,8 +24,9 @@ class AmenityController extends Controller
     {
         $validatedData = $request->validate([
             'amenities_reference_id' => 'required|exists:amenities_references,id',
-            'specific_name' => 'required|string|max:255',
+            'specific_name' => 'nullable|string|max:255',
             'status' => 'required|integer',
+            'type' => 'nullable|integer|in:1,2,3',
         ]);
 
         $amenity = Amenity::create($validatedData);
@@ -49,8 +50,9 @@ class AmenityController extends Controller
     {
         $validatedData = $request->validate([
             'amenities_reference_id' => 'sometimes|required|exists:amenities_references,id',
-            'specific_name' => 'sometimes|required|string|max:255',
+            'specific_name' => 'sometimes|nullable|string|max:255',
             'status' => 'sometimes|required|integer',
+            'type' => 'sometimes|nullable|integer|in:1,2,3',
         ]);
 
         $amenity->update($validatedData);

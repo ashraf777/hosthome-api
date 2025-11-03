@@ -21,10 +21,16 @@ class RoomTypeAmenityController extends Controller
 
         $validated = $request->validate([
             'amenity_ids' => 'present|array',
+            'amenity_ids.*' => 'exists:amenities,id',
         ]);
 
+        $syncData = [];
+        foreach ($validated['amenity_ids'] as $amenityId) {
+            $syncData[$amenityId] = ['hosting_company_id' => $request->user()->hosting_company_id];
+        }
+
         // The sync method handles attaching and detaching in one go.
-        $roomType->amenities()->sync($validated['amenity_ids']);
+        $roomType->amenities()->sync($syncData);
 
         return response()->json(['message' => 'Amenities updated successfully.']);
     }

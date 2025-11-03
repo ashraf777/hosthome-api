@@ -21,7 +21,8 @@ use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\AvailabilityController;
 
 use App\Http\Controllers\RoomTypeController;
-use App\Http\Controllers\RoomTypePhotoController;
+
+use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\UnitController;
 
 use App\Http\Controllers\AmenityController;
@@ -72,8 +73,6 @@ Route::middleware('api.token.check')->group(function () {
 
     Route::get('properties/{property}/room-types', [RoomTypeController::class, 'indexByProperty']);
     Route::apiResource('room-types', RoomTypeController::class);
-    Route::apiResource('room-types.photos', RoomTypePhotoController::class)->except(['update']);
-    Route::post('room-types/{room_type}/photos/{photo}', [RoomTypePhotoController::class, 'update'])->name('room-types.photos.update');
     Route::apiResource('units', UnitController::class);
     
     Route::apiResource('amenities', AmenityController::class);
@@ -85,6 +84,13 @@ Route::middleware('api.token.check')->group(function () {
     Route::get('seo-metadata', [SeoMetadataController::class, 'show']);
     Route::post('seo-metadata', [SeoMetadataController::class, 'store']);
     Route::put('seo-metadata/{seoMetadata}', [SeoMetadataController::class, 'update']);
+
+    // Photo routes
+    Route::get('photos', [PhotoController::class, 'index']);
+    Route::post('photos', [PhotoController::class, 'store']);
+    Route::get('photos/{photo}', [PhotoController::class, 'show']);
+    Route::post('photos/{photo}', [PhotoController::class, 'update']);
+    Route::delete('photos/{photo}', [PhotoController::class, 'destroy']);
 });
 
 // Health Check Endpoint

@@ -21,10 +21,16 @@ class PropertyAmenityController extends Controller
 
         $validated = $request->validate([
             'amenity_ids' => 'present|array',
+            'amenity_ids.*' => 'exists:amenities,id',
         ]);
 
         // The sync method handles attaching and detaching in one go.
-        $property->amenities()->sync($validated['amenity_ids']);
+        $syncData = [];
+        foreach ($validated['amenity_ids'] as $amenityId) {
+            $syncData[$amenityId] = ['hosting_company_id' => $request->user()->hosting_company_id];
+        }
+
+        $property->amenities()->sync($syncData);
 
         return response()->json(['message' => 'Amenities updated successfully.']);
     }

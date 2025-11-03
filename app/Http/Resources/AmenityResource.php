@@ -19,6 +19,7 @@ class AmenityResource extends JsonResource
             'amenities_reference_id' => $this->amenities_reference_id,
             'specific_name' => $this->specific_name,
             'status' => $this->status,
+            'type' => $this->type,
             'amenity_reference' => new AmenityReferenceResource($this->whenLoaded('amenityReference')),
         ];
     }

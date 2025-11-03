@@ -55,7 +55,7 @@ class RoomType extends Model
      */
     public function photos(): HasMany
     {
-        return $this->hasMany(RoomTypePhoto::class);
+        return $this->hasMany(Photo::class, 'photo_type_id')->where('photo_type', 'room_type'   );
     }
 
     /**

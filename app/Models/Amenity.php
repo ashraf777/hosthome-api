@@ -19,6 +19,7 @@ class Amenity extends Model
         'amenities_reference_id',
         'specific_name',
         'status',
+        'type',
     ];
 
     /**
@@ -28,6 +29,7 @@ class Amenity extends Model
      */
     protected $casts = [
         'status' => 'integer',
+        'type' => 'integer',
     ];
 
     /**

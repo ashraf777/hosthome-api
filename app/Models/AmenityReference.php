@@ -19,5 +19,6 @@ class AmenityReference extends Model
     
     protected $fillable = [
         'name',
+        'type',
     ];
 }

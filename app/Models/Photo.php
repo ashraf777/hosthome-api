@@ -1,0 +1,23 @@
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Photo extends Model
+{
+    use HasFactory;
+    protected $table = 'photos';
+
+    protected $fillable = [
+        'hosting_company_id',
+        'photo_type',
+        'photo_type_id',
+        'photo_path',
+        'caption',
+        'is_main',
+        'sort_order',
+        'status',
+    ];
+}

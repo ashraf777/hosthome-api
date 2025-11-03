@@ -23,8 +23,8 @@ class AmenityReferenceController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:amenities_references,name',
+            'type' => 'nullable|integer|in:1,2,3',
         ]);
 
         $amenityReference = AmenityReference::create($validatedData);
@@ -45,8 +45,8 @@ class AmenityReferenceController extends Controller
     public function update(Request $request, AmenityReference $amenityReference)
     {
         $validatedData = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'type' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:255|unique:amenities_references,name,' . $amenityReference->id,
+            'type' => 'sometimes|nullable|integer|in:1,2,3',
         ]);
 
         $amenityReference->update($validatedData);

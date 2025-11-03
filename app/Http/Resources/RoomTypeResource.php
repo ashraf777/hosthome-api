@@ -33,7 +33,7 @@ class RoomTypeResource extends JsonResource
             'property' => new PropertyResource($this->whenLoaded('property')),
             'properties' => PropertyResource::collection($this->whenLoaded('properties')),
             'amenities' => AmenityResource::collection($this->whenLoaded('amenities')),
-            'photos' => RoomTypePhotoResource::collection($this->whenLoaded('photos')),
+            'photos' => PhotoResource::collection($this->whenLoaded('photos')),
         ];
     }
 }
