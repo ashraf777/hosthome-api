@@ -19,11 +19,22 @@ class UnitController extends Controller
         // }
 
         $hostingCompanyId = $request->user()->hosting_company_id;
+    
+        // 1. Get the room_type_id from the query parameters
+        $roomTypeId = $request->query('room_type_id');
 
-        // Tenancy check is now done directly on the property
-        $units = Unit::whereHas('property', function ($query) use ($hostingCompanyId) {
+        // 2. Start the query with the company filter
+        $query = Unit::whereHas('property', function ($query) use ($hostingCompanyId) {
             $query->where('hosting_company_id', $hostingCompanyId);
-        })->with(['property', 'roomType', 'unitTypeRef', 'owner'])->paginate();
+        });
+
+        // 3. Conditionally apply the room type filter
+        if ($roomTypeId) {
+            $query->where('room_type_id', $roomTypeId);
+        }
+
+        // 4. Continue with relationships and pagination
+        $units = $query->with(['property', 'roomType', 'unitTypeRef', 'owner'])->paginate();
 
         return UnitResource::collection($units);
     }

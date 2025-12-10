@@ -51,6 +51,13 @@ class RoomTypeController extends Controller
             'property_id' => 'nullable|integer',
             'property_ids' => 'nullable|array',
             'property_ids.*' => 'integer|exists:properties,id',
+
+            'room_setup' => 'nullable|array',
+            'room_setup.livingRooms' => 'nullable|integer|min:0',
+            'room_setup.bathrooms' => 'nullable|integer|min:0',
+            'room_setup.rooms' => 'nullable|array',
+            'room_setup.rooms.*.name' => 'required|string|max:100',
+            'room_setup.rooms.*.beds' => 'required|array',
         ]);
 
         $validated['hosting_company_id'] = $request->user()->hosting_company_id;
@@ -114,6 +121,13 @@ class RoomTypeController extends Controller
             'weekday_price' => 'sometimes|nullable|numeric|min:0',
             'weekend_price' => 'sometimes|nullable|numeric|min:0',
             'status' => 'sometimes|nullable|boolean',
+
+            'room_setup' => 'sometimes|nullable|array',
+            'room_setup.livingRooms' => 'nullable|integer|min:0',
+            'room_setup.bathrooms' => 'nullable|integer|min:0',
+            'room_setup.rooms' => 'nullable|array',
+            'room_setup.rooms.*.name' => 'nullable|string|max:100',
+            'room_setup.rooms.*.beds' => 'nullable|array',
         ]);
 
         $roomType->update($validated);

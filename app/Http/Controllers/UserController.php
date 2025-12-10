@@ -14,7 +14,7 @@ class UserController extends Controller
      */
     public function show(Request $request)
     {
-        return new UserResource($request->user()->load('role'));
+        return new UserResource($request->user()->load(['role', 'hostingCompany']));
     }
 
     /**
@@ -38,7 +38,7 @@ class UserController extends Controller
         }
 
         $user->save();
-        return new UserResource($user->load('role'));
+        return new UserResource($user->load(['role', 'hostingCompany']));
     }
 
     /**
@@ -54,7 +54,7 @@ class UserController extends Controller
         $companyId = $request->attributes->get('hosting_company_id');
 
         $users = User::where('hosting_company_id', $companyId)
-            ->with('role')
+            ->with(['role', 'hostingCompany'])
             ->paginate(20);
 
         return UserResource::collection($users);
@@ -83,6 +83,6 @@ class UserController extends Controller
         $user->role_id = $request->role_id;
         $user->save();
 
-        return new UserResource($user->load('role'));
+        return new UserResource($user->load(['role', 'hostingCompany']));
     }
 }

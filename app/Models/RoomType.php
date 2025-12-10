@@ -27,6 +27,11 @@ class RoomType extends Model
         'weekday_price',
         'weekend_price',
         'status',
+        'room_setup',
+    ];
+
+    protected $casts = [
+        'room_setup' => 'array',
     ];
 
     /**

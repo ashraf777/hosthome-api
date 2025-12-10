@@ -25,6 +25,7 @@ class RoomTypeResource extends JsonResource
             'weekday_price' => $this->weekday_price,
             'weekend_price' => $this->weekend_price,
             'status' => $this->status,
+            'room_setup' => $this->room_setup,
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
 

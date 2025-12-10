@@ -8,54 +8,54 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'property_unit_id',
-        'guest_id',
-        'owner_statement_id',
-        'channel_source',
-        'external_reservation_id',
-        'channel_booking_id',
-        'check_in_date',
-        'check_out_date',
-        'total_price',
-        'guest_count',
-        'adult_count',
-        'status',
-    ];
-
-    protected $casts = [
-        'check_in_date' => 'datetime',
-        'check_out_date' => 'datetime',
-    ];
-
-    public function propertyUnit()
-    {
-        return $this->belongsTo(PropertyUnit::class);
-    }
+    protected $guarded = ['id'];
 
     public function guest()
     {
         return $this->belongsTo(Guest::class);
     }
 
-    public function ownerStatement()
+    public function property()
     {
-        return $this->belongsTo(OwnerStatement::class);
+        return $this->belongsTo(Property::class, 'property_id');
+    }
+
+    public function roomType()
+    {
+        return $this->belongsTo(RoomType::class, 'room_type_id');
+    }
+
+    public function propertyUnit()
+    {
+        return $this->belongsTo(Unit::class);
+    }
+
+    public function hostingCompany()
+    {
+        return $this->belongsTo(HostingCompany::class, 'hosting_company_id');
+    }
+
+    public function bookingTypeReference()
+    {
+        return $this->belongsTo(BookingTypeReference::class);
+    }
+
+    public function channelReference()
+    {
+        return $this->belongsTo(Channel::class, 'channel_id');
+    }
+    public function itemsProvided()
+    {
+        return $this->hasMany(BookingItemProvided::class);
+    }
+
+    public function charges()
+    {
+        return $this->hasMany(BookingCharge::class);
     }
 
     public function payments()
     {
         return $this->hasMany(Payment::class);
-    }
-
-    public function tasks()
-    {
-        return $this->hasMany(Task::class);
-    }
-
-    public function messages()
-    {
-        return $this->hasMany(Message::class);
     }
 }

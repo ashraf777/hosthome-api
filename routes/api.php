@@ -17,10 +17,14 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PropertyReferenceController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingTypeReferenceController;
+use App\Http\Controllers\ChargeReferenceController;
+
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\AvailabilityController;
 
 use App\Http\Controllers\RoomTypeController;
+use App\Http\Controllers\BedTypeReferenceController;
 
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\UnitController;
@@ -32,6 +36,13 @@ use App\Http\Controllers\RoomTypeAmenityController;
 
 use App\Http\Controllers\CostTypeController;
 use App\Http\Controllers\SeoMetadataController;
+
+use App\Http\Controllers\MultiCalendarController;
+
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\ChecklistController;
+use App\Http\Controllers\CleaningTeamController;
+use App\Http\Controllers\PresetTaskController;
 
 // --- PUBLIC AUTH ROUTES (NO MIDDLEWARE) ---
 Route::post('register', [AuthController::class, 'register']);
@@ -68,6 +79,12 @@ Route::middleware('api.token.check')->group(function () {
     Route::apiResource('property-references', PropertyReferenceController::class)->except(['show']);
     Route::apiResource('channels', ChannelController::class);
     Route::apiResource('bookings', BookingController::class);
+
+    Route::get('multi-calendar', [MultiCalendarController::class, 'index']);
+
+    Route::get('booking-type-references', [BookingTypeReferenceController::class, 'index']);
+    Route::get('charge-references', [ChargeReferenceController::class, 'index']);
+
     Route::apiResource('pricing-rules', PricingRuleController::class);
     Route::get('availability', [AvailabilityController::class, 'getAvailability']);
 
@@ -80,6 +97,8 @@ Route::middleware('api.token.check')->group(function () {
     Route::post('properties/{property}/amenities', [PropertyAmenityController::class, 'store']);
     Route::post('room-types/{room_type}/amenities', [RoomTypeAmenityController::class, 'store']);
 
+    Route::get('bed-type-references', [BedTypeReferenceController::class, 'index']);
+
     Route::apiResource('cost-types', CostTypeController::class)->only(['index', 'show']);
     Route::get('seo-metadata', [SeoMetadataController::class, 'show']);
     Route::post('seo-metadata', [SeoMetadataController::class, 'store']);
@@ -91,6 +110,18 @@ Route::middleware('api.token.check')->group(function () {
     Route::get('photos/{photo}', [PhotoController::class, 'show']);
     Route::post('photos/{photo}', [PhotoController::class, 'update']);
     Route::delete('photos/{photo}', [PhotoController::class, 'destroy']);
+
+    // --- TASK MANAGER ---
+    Route::apiResource('tasks', TaskController::class);
+    Route::get('tasks/{task}/logs', [TaskController::class, 'getLogs']);
+    Route::apiResource('checklists', ChecklistController::class);
+    Route::post('checklists/{checklist}/items', [ChecklistController::class, 'storeItem']);
+    Route::put('checklists/{checklist}/items/{item}', [ChecklistController::class, 'updateItem']);
+    Route::delete('checklists/{checklist}/items/{item}', [ChecklistController::class, 'destroyItem']);
+    Route::apiResource('cleaning-teams', CleaningTeamController::class);
+    Route::post('cleaning-teams/{cleaning_team}/sync-members', [CleaningTeamController::class, 'syncMembers']);
+    Route::apiResource('preset-tasks', PresetTaskController::class);
+    
 });
 
 // Health Check Endpoint

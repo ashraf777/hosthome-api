@@ -25,6 +25,7 @@ class UserResource extends JsonResource
                 'id' => $this->role_id,
                 'name' => optional($this->role)->name,
             ],
+            'hosting_company' => new HostingCompanyResource($this->whenLoaded('hostingCompany')),
             
             // NOTE: Do NOT expose the 'password' or raw 'access_token' here.
         ];
