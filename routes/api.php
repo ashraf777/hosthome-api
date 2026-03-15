@@ -43,10 +43,18 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\CleaningTeamController;
 use App\Http\Controllers\PresetTaskController;
+use App\Http\Controllers\Beds24Controller;
+
+use App\Http\Controllers\Guest\GuestPropertyController;
+use App\Http\Controllers\Guest\GuestBookingController;
+use App\Http\Controllers\Guest\GuestLookupController;
 
 // --- PUBLIC AUTH ROUTES (NO MIDDLEWARE) ---
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+
+// --- WEBHOOKS (Public) ---
+Route::post('webhooks/beds24/booking', [Beds24Controller::class, 'handleBookingWebhook']);
 
 // --- PROTECTED ROUTES ---
 // All routes within this group require a valid API token.
@@ -122,6 +130,34 @@ Route::middleware('api.token.check')->group(function () {
     Route::post('cleaning-teams/{cleaning_team}/sync-members', [CleaningTeamController::class, 'syncMembers']);
     Route::apiResource('preset-tasks', PresetTaskController::class);
     
+    // --- BEDS24 CONFIGURATION ---
+    Route::post('beds24/config', [Beds24Controller::class, 'storeConfig']);
+    Route::get('beds24/status', [Beds24Controller::class, 'checkStatus']);
+    Route::get('beds24/properties', [Beds24Controller::class, 'getProperties']);
+    Route::post('beds24/properties/import', [Beds24Controller::class, 'importProperty']);
+    Route::post('beds24/properties/attach', [Beds24Controller::class, 'attachProperty']);
+    Route::post('beds24/calendar/sync', [Beds24Controller::class, 'syncCalendar']);
+    Route::post('beds24/calendar/price', [Beds24Controller::class, 'updatePrice']);
+    Route::post('beds24/bookings/import', [Beds24Controller::class, 'bulkImportBookings']);
+    Route::post('beds24/bookings/import-all', [Beds24Controller::class, 'bulkImportAllBookings']);
+    
+});
+
+// --- GUEST BOOKING ENGINE API (Public) ---
+Route::prefix('guest')->group(function () {
+    
+    // Properties & Search
+    Route::get('properties', [GuestPropertyController::class, 'index']);
+    Route::get('properties/{id}', [GuestPropertyController::class, 'show']);
+    
+    // Lookups
+    Route::get('amenities', [GuestLookupController::class, 'amenities']);
+    Route::get('countries', [GuestLookupController::class, 'countries']);
+    
+    // Booking Flow
+    Route::get('availability/check', [GuestBookingController::class, 'checkAvailability']);
+    Route::post('bookings/quote', [GuestBookingController::class, 'quote']);
+    Route::post('bookings', [GuestBookingController::class, 'store']);
 });
 
 // Health Check Endpoint

@@ -16,9 +16,16 @@ class BookingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return BookingResource::collection(Booking::with(['guest', 'property', 'roomType', 'propertyUnit', 'hostingCompany', 'bookingTypeReference', 'channelReference'])->paginate());
+        $user = $request->user();
+        $query = Booking::with(['guest', 'property', 'roomType', 'propertyUnit', 'hostingCompany', 'bookingTypeReference', 'channelReference']);
+        
+        if ($user && $user->hosting_company_id) {
+            $query->where('hosting_company_id', $user->hosting_company_id);
+        }
+
+        return BookingResource::collection($query->orderBy('created_at', 'desc')->get());
     }
 
     /**

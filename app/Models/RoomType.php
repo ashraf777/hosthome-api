@@ -44,16 +44,11 @@ class RoomType extends Model
 
     public function property(): BelongsTo // <-- CORRECTED
     {
-        return $this->belongsTo(Property::class);
+        return $this->belongsTo(Property::class, 'property_id', 'id');
     }
 
-    /**
-     * The properties that use this room type.
-     */
-    public function properties(): BelongsToMany
-    {
-        return $this->belongsToMany(Property::class, 'property_room_type');
-    }
+    // The inverse `property()` BelongsTo relation already exists above.
+    // Removed properties() belongsToMany because room_types has property_id.
 
     /**
      * Get the photos for the room type.

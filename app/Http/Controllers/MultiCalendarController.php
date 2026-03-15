@@ -22,7 +22,7 @@ class MultiCalendarController extends Controller
     public function index(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'property_id' => 'nullable|integer|exists:properties,id',
+            'property_id' => 'nullable|string',
             'start_date' => 'nullable|date_format:Y-m-d',
             'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
             'statuses' => 'nullable|string',
@@ -33,13 +33,13 @@ class MultiCalendarController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $propertyId = $request->input('property_id');
+        $propertyId = $request->input('property_id') ? explode(',', $request->input('property_id')) : [];
         $startDate = Carbon::parse($request->input('start_date'));
         $endDate = Carbon::parse($request->input('end_date'));
         $statuses = $request->input('statuses') ? explode(',', $request->input('statuses')) : [];
         $channels = $request->input('channels') ? explode(',', $request->input('channels')) : [];
 
-        $roomTypes = RoomType::with('units')->where('property_id', $propertyId)->get();
+        $roomTypes = RoomType::with('units')->whereIn('property_id', $propertyId)->get();
 
         $period = CarbonPeriod::create($startDate, $endDate);
         $dates = [];
@@ -48,8 +48,8 @@ class MultiCalendarController extends Controller
         }
 
         // Fetch bookings and organize them in a map for efficient lookup.
-        $bookingsQuery = Booking::with('bookingTypeReference')
-            ->where('property_id', $propertyId)
+        $bookingsQuery = Booking::with('bookingTypeReference', 'guest', 'propertyUnit')
+            ->whereIn('property_id', $propertyId)
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where('check_in_date', '<=', $endDate->format('Y-m-d'))
                       ->where('check_out_date', '>', $startDate->format('Y-m-d'));
@@ -92,9 +92,13 @@ class MultiCalendarController extends Controller
 
             // Initialize dates for the room type with default inventory and empty rates.
             foreach ($dates as $date) {
+                $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+                $isWeekend = in_array($dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY]);
+                $price = $isWeekend && $roomType->weekend_price ? $roomType->weekend_price : $roomType->weekday_price;
+
                 $roomTypeData['dates'][$date] = [
                     'inventory' => $roomType->units->count() . '|' . $roomType->units->count(),
-                    'rates' => $roomType->weekday_price ? (object)['default' => 'MYR ' . number_format($roomType->weekday_price, 2)] : ''
+                    'rates' => $price ? (object)['default' => 'MYR ' . number_format($price, 2)] : ''
                 ];
             }
 

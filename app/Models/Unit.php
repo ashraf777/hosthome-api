@@ -76,4 +76,12 @@ class Unit extends Model
         // Assuming a ChannelMapping model exists for the 'channels_mapping' table
         return $this->hasMany(ChannelMapping::class, 'property_unit_id');
     }
+
+    /**
+     * Get the photos for the property unit.
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(Photo::class, 'photo_type_id')->where('photo_type', 'property_unit');
+    }
 }

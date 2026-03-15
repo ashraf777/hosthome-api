@@ -66,9 +66,9 @@ class PropertyController extends Controller
 
     public function show(Request $request, Property $property)
     {
-        if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
-            return response()->json(['message' => 'Not Found'], 404);
-        }
+        // if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
+        //     return response()->json(['message' => 'Not Found'], 404);
+        // }
 
         // if (!$request->user()->canPermission('property:view')) {
         //     return response()->json(['message' => 'This action is unauthorized.'], 403);

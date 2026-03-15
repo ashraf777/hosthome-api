@@ -55,9 +55,9 @@ class Property extends Model
     /**
      * The room types that belong to the property.
      */
-    public function roomTypes(): BelongsToMany
+    public function roomTypes(): HasMany
     {
-        return $this->belongsToMany(RoomType::class, 'property_room_type');
+        return $this->hasMany(RoomType::class, 'property_id', 'id');
     }
 
     /**
@@ -90,5 +90,13 @@ class Property extends Model
     public function propertyType(): BelongsTo
     {
         return $this->belongsTo(PropertyReference::class, 'property_type_ref_id');
+    }
+
+    /**
+     * Get the photos for the property.
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(Photo::class, 'photo_type_id')->where('photo_type', 'property');
     }
 }

@@ -15,7 +15,7 @@ class PhotoController extends Controller
     public function index(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'photo_type' => 'required|string|in:property,room_type,unit',
+            'photo_type' => 'required|string|in:property,room_type,unit,task',
             'photo_type_id' => 'required|integer',
         ]);
 
@@ -37,7 +37,7 @@ class PhotoController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'photo_type' => 'required|string|in:property,room_type,unit',
+            'photo_type' => 'required|string|in:property,room_type,unit,task',
             'photo_type_id' => 'required|integer',
             'photos' => 'required|array',
             'photos.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',

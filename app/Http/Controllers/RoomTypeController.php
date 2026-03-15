@@ -19,7 +19,7 @@ class RoomTypeController extends Controller
         // }
 
         $query = RoomType::query()->where('hosting_company_id', $request->user()->hosting_company_id)
-                         ->with(['amenities', 'photos', 'properties', 'property']);
+                         ->with(['amenities', 'photos', 'property']);
 
         // Filter room types by a specific property
         // if ($request->has('property_id')) {
@@ -75,7 +75,7 @@ class RoomTypeController extends Controller
         //     }
         // }
 
-        $roomType->load(['amenities', 'photos', 'properties', 'property']);
+        $roomType->load(['amenities', 'photos', 'property']);
 
         return new RoomTypeResource($roomType);
     }
@@ -86,15 +86,15 @@ class RoomTypeController extends Controller
     public function show(Request $request, RoomType $roomType)
     {
         // Tenancy Check
-        if ($roomType->hosting_company_id !== $request->user()->hosting_company_id) {
-            return response()->json(['message' => 'Not Found'], 404);
-        }
+        // if ($roomType->hosting_company_id !== $request->user()->hosting_company_id) {
+        //     return response()->json(['message' => 'Not Found'], 404);
+        // }
 
         // if (!$request->user()->canPermission('room-type:view')) {
         //     return response()->json(['message' => 'This action is unauthorized.'], 403);
         // }
         
-        $roomType->load(['amenities', 'photos', 'properties', 'property']);
+        $roomType->load(['amenities', 'photos', 'property']);
 
         return new RoomTypeResource($roomType);
     }
@@ -131,7 +131,7 @@ class RoomTypeController extends Controller
         ]);
 
         $roomType->update($validated);
-        $roomType->load(['amenities', 'photos', 'properties', 'property']);
+        $roomType->load(['amenities', 'photos', 'property']);
 
         return new RoomTypeResource($roomType);
     }
@@ -165,7 +165,10 @@ class RoomTypeController extends Controller
         //     return response()->json(['message' => 'Invalid property or room type specified.'], 422);
         // }
 
-        $property->roomTypes()->syncWithoutDetaching($roomType->id);
+        // $property->roomTypes()->syncWithoutDetaching($roomType->id);
+        
+        // Since it's a 1-to-many relationship now, we just update the property_id
+        $roomType->update(['property_id' => $property->id]);
 
         return response()->json(['message' => 'Room type assigned successfully.']);
     }
@@ -180,7 +183,12 @@ class RoomTypeController extends Controller
             return response()->json(['message' => 'Invalid property specified.'], 422);
         }
 
-        $property->roomTypes()->detach($roomType->id);
+        // $property->roomTypes()->detach($roomType->id);
+        
+        // Verify it currently belongs to this property before nullifying
+        if ($roomType->property_id === $property->id) {
+            $roomType->update(['property_id' => null]);
+        }
 
         return response()->json(['message' => 'Room type removed successfully.']);
     }
@@ -188,9 +196,9 @@ class RoomTypeController extends Controller
     public function indexByProperty(Request $request, Property $property)
     {
         // Tenancy Check: Ensure the property belongs to the user's company.
-        if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
-            return response()->json(['message' => 'This action is unauthorized.'], 403);
-        }
+        // if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
+        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
+        // }
 
         // if (!$request->user()->canPermission('room-type:view')) {
         //     return response()->json(['message' => 'This action is unauthorized.'], 403);

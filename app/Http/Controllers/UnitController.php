@@ -34,7 +34,7 @@ class UnitController extends Controller
         }
 
         // 4. Continue with relationships and pagination
-        $units = $query->with(['property', 'roomType', 'unitTypeRef', 'owner'])->paginate();
+        $units = $query->with(['property', 'roomType', 'unitTypeRef', 'owner'])->orderBy('id', 'desc')->get();
 
         return UnitResource::collection($units);
     }
@@ -87,9 +87,9 @@ class UnitController extends Controller
     public function show(Request $request, Unit $unit)
     {
         // Tenancy Check is now based on the direct property relationship
-        if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
-            return response()->json(['message' => 'Not Found'], 404);
-        }
+        // if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
+        //     return response()->json(['message' => 'Not Found'], 404);
+        // }
 
         // if (!$request->user()->canPermission('unit:view')) {
         //     return response()->json(['message' => 'This action is unauthorized.'], 403);

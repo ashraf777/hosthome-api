@@ -32,7 +32,6 @@ class RoomTypeResource extends JsonResource
             // Relationships (loaded conditionally)
             'hosting_company' => new HostingCompanyResource($this->whenLoaded('hostingCompany')),
             'property' => new PropertyResource($this->whenLoaded('property')),
-            'properties' => PropertyResource::collection($this->whenLoaded('properties')),
             'amenities' => AmenityResource::collection($this->whenLoaded('amenities')),
             'photos' => PhotoResource::collection($this->whenLoaded('photos')),
         ];
