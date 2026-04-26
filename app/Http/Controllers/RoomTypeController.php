@@ -14,9 +14,9 @@ class RoomTypeController extends Controller
      */
     public function index(Request $request)
     {
-        // if (!$request->user()->canPermission('room-type:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $query = RoomType::query()->where('hosting_company_id', $request->user()->hosting_company_id)
                          ->with(['amenities', 'photos', 'property']);
@@ -36,9 +36,9 @@ class RoomTypeController extends Controller
      */
     public function store(Request $request)
     {
-        // if (!$request->user()->canPermission('room-type:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -85,14 +85,9 @@ class RoomTypeController extends Controller
      */
     public function show(Request $request, RoomType $roomType)
     {
-        // Tenancy Check
-        // if ($roomType->hosting_company_id !== $request->user()->hosting_company_id) {
-        //     return response()->json(['message' => 'Not Found'], 404);
-        // }
-
-        // if (!$request->user()->canPermission('room-type:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
         
         $roomType->load(['amenities', 'photos', 'property']);
 
@@ -109,9 +104,9 @@ class RoomTypeController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('room-type:update')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -195,14 +190,9 @@ class RoomTypeController extends Controller
 
     public function indexByProperty(Request $request, Property $property)
     {
-        // Tenancy Check: Ensure the property belongs to the user's company.
-        // if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
-
-        // if (!$request->user()->canPermission('room-type:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         // Retrieve room types using the hasMany relationship from the Property model
         $roomTypes = RoomType::where('property_id', $property->id)

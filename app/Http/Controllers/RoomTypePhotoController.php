@@ -17,10 +17,9 @@ class RoomTypePhotoController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // CORRECT: Using the application's canPermission() method
-        // if (!$request->user()->canPermission('room-type-photo:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type-photo:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         return response()->json($roomType->photos);
     }
@@ -31,9 +30,9 @@ class RoomTypePhotoController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('room-type-photo:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('room-type-photo:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $request->validate([
             'photo' => 'required|image|max:2048',

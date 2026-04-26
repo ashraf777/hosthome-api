@@ -18,6 +18,10 @@ class ChecklistController extends Controller
      */
     public function index(Request $request)
     {
+        if (!$request->user()->canPermission('task:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $checklists = Checklist::where('hosting_company_id', $request->user()->hosting_company_id)
             ->with('items') // Eager load items for efficiency
             ->latest()
@@ -31,6 +35,10 @@ class ChecklistController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->user()->canPermission('task:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'checklist_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -70,9 +78,13 @@ class ChecklistController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Checklist $checklist)
+    public function show(Request $request, Checklist $checklist)
     {
-        if (request()->user()->hosting_company_id !== $checklist->hosting_company_id) {
+        if (!$request->user()->canPermission('task:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
+        if ($request->user()->hosting_company_id !== $checklist->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -84,6 +96,10 @@ class ChecklistController extends Controller
      */
     public function update(Request $request, Checklist $checklist)
     {
+        if (!$request->user()->canPermission('task:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         if ($request->user()->hosting_company_id !== $checklist->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
@@ -105,9 +121,13 @@ class ChecklistController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Checklist $checklist)
+    public function destroy(Request $request, Checklist $checklist)
     {
-        if (request()->user()->hosting_company_id !== $checklist->hosting_company_id) {
+        if (!$request->user()->canPermission('task:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
+        if ($request->user()->hosting_company_id !== $checklist->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -125,6 +145,10 @@ class ChecklistController extends Controller
      */
     public function storeItem(Request $request, Checklist $checklist)
     {
+        if (!$request->user()->canPermission('task:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         if ($request->user()->hosting_company_id !== $checklist->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
@@ -155,6 +179,10 @@ class ChecklistController extends Controller
      */
     public function updateItem(Request $request, Checklist $checklist, ChecklistItem $item)
     {
+        if (!$request->user()->canPermission('task:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         if ($request->user()->hosting_company_id !== $checklist->hosting_company_id || $item->checklist_id !== $checklist->id) {
             abort(403, 'Unauthorized action.');
         }
@@ -178,6 +206,10 @@ class ChecklistController extends Controller
      */
     public function destroyItem(Request $request, Checklist $checklist, ChecklistItem $item)
     {
+        if (!$request->user()->canPermission('task:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         if ($request->user()->hosting_company_id !== $checklist->hosting_company_id || $item->checklist_id !== $checklist->id) {
             abort(403, 'Unauthorized action.');
         }

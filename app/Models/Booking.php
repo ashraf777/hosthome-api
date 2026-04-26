@@ -10,6 +10,15 @@ class Booking extends Model
     use HasFactory;
     protected $guarded = ['id'];
 
+    protected static function booted()
+    {
+        static::creating(function ($booking) {
+            if (empty($booking->guest_portal_token)) {
+                $booking->guest_portal_token = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
+
     public function guest()
     {
         return $this->belongsTo(Guest::class);
@@ -57,5 +66,10 @@ class Booking extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
     }
 }

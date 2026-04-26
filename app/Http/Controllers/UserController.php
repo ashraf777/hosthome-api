@@ -83,6 +83,9 @@ class UserController extends Controller
         $user->role_id = $request->role_id;
         $user->save();
 
+        // Clear the permission cache so the new role's permissions apply immediately
+        $user->clearPermissionsCache();
+
         return new UserResource($user->load(['role', 'hostingCompany']));
     }
 }

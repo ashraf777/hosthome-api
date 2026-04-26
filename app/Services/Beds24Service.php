@@ -814,4 +814,95 @@ class Beds24Service
             self::$isSyncing = false;
         }
     }
+
+    /**
+     * Send an outbound message to a guest via Beds24 channels (e.g. Airbnb, Booking.com).
+     */
+    public function sendMessage(\App\Models\Message $message)
+    {
+        if (!$message->booking || !$message->booking->external_reservation_id) {
+            Log::warning("Beds24 SendMessage: Cannot send message, booking is not linked to Beds24.");
+            return false;
+        }
+
+        $token = $this->getValidToken();
+
+        $payload = [
+            [
+                'bookId' => (int)$message->booking->external_reservation_id,
+                'message' => $message->content
+            ]
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                'accept' => 'application/json',
+                'token' => $token,
+            ])->post('https://beds24.com/api/v2/messages', $payload);
+
+            if ($response->failed()) {
+                Log::error("Beds24 SendMessage Failed", [
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+                return false;
+            }
+
+            $result = $response->json();
+            $msgResult = $result[0] ?? null;
+
+            if ($msgResult && isset($msgResult['success']) && $msgResult['success']) {
+                $message->update([
+                    'status' => 'delivered',
+                    'external_message_id' => $msgResult['new']['id'] ?? null
+                ]);
+                return true;
+            }
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error("Beds24 SendMessage Exception: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Process an inbound message from Beds24Webhook 
+     * Payload expected to contain bookId, messageId, and text.
+     */
+    public function handleInboundMessage(array $payload)
+    {
+        $bookId = $payload['bookId'] ?? null;
+        $messageText = $payload['message'] ?? null;
+        $messageId = $payload['id'] ?? null;
+
+        if (!$bookId || !$messageText) {
+            return false;
+        }
+
+        $booking = \App\Models\Booking::where('external_reservation_id', (string)$bookId)->first();
+        if (!$booking) {
+            Log::warning("Beds24 InboundMessage: Booking ID {$bookId} not found locally.");
+            return false;
+        }
+
+        // Check if message already exists
+        if ($messageId && \App\Models\Message::where('external_message_id', (string)$messageId)->exists()) {
+            return true; // Already processed
+        }
+
+        \App\Models\Message::create([
+            'booking_id' => $booking->id,
+            'guest_id' => $booking->guest_id,
+            'direction' => 'inbound',
+            'channel' => 'beds24',
+            'external_message_id' => (string)$messageId,
+            'content' => $messageText,
+            'status' => 'delivered',
+            'sent_at' => now(),
+        ]);
+
+        return true;
+    }
 }

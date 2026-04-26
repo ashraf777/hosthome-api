@@ -13,9 +13,9 @@ class PropertyOwnerController extends Controller
      */
     public function index(Request $request)
     {
-        // if (!$request->user()->canPermission('property-owner:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-owner:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $owners = PropertyOwner::where('hosting_company_id', $request->user()->hosting_company_id)
             ->with('properties')
@@ -30,9 +30,9 @@ class PropertyOwnerController extends Controller
      */
     public function store(Request $request)
     {
-        // if (!$request->user()->canPermission('property-owner:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-owner:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',

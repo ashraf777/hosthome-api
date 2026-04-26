@@ -15,10 +15,9 @@ class HostingCompanyController extends Controller
      */
     public function index(Request $request)
     {
-        // CORRECT: Super Admin Permission Check
-        // if (!$request->user()->canPermission('hosting-company:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('hosting-company:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $companies = HostingCompany::with(['country', 'plan'])->paginate(20);
         
@@ -31,10 +30,9 @@ class HostingCompanyController extends Controller
      */
     public function store(Request $request)
     {
-        // CORRECT: Super Admin Permission Check
-        // if (!$request->user()->canPermission('hosting-company:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('hosting-company:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -67,10 +65,9 @@ class HostingCompanyController extends Controller
      */
     public function show(Request $request, HostingCompany $hostingCompany)
     {
-        // CORRECT: Super Admin Permission Check
-        // if (!$request->user()->canPermission('hosting-company:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('hosting-company:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         return new JsonResource($hostingCompany->load(['country', 'plan']));
     }
@@ -81,10 +78,9 @@ class HostingCompanyController extends Controller
      */
     public function update(Request $request, HostingCompany $hostingCompany)
     {
-        // CORRECT: Super Admin Permission Check
-        // if (!$request->user()->canPermission('hosting-company:update')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('hosting-company:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|max:255',
@@ -104,10 +100,9 @@ class HostingCompanyController extends Controller
      */
     public function destroy(Request $request, HostingCompany $hostingCompany)
     {
-        // CORRECT: Super Admin Permission Check
-        // if (!$request->user()->canPermission('hosting-company:delete')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('hosting-company:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         // NOTE: In a real SaaS app, this would involve a complex process:
         // 1. Terminating all subscriptions.

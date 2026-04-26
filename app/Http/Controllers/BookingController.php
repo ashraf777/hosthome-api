@@ -18,6 +18,10 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
+        if (!$request->user()->canPermission('booking:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $user = $request->user();
         $query = Booking::with(['guest', 'property', 'roomType', 'propertyUnit', 'hostingCompany', 'bookingTypeReference', 'channelReference']);
         
@@ -33,6 +37,10 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->user()->canPermission('booking:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'guest.first_name' => 'required|string|max:255',
             'check_in_date' => 'required|date',
@@ -122,8 +130,12 @@ class BookingController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Booking $booking)
+    public function show(Request $request, Booking $booking)
     {
+        if (!$request->user()->canPermission('booking:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         return BookingResource::make($booking->load(['guest', 'property', 'roomType', 'propertyUnit', 'hostingCompany', 'bookingTypeReference', 'channelReference', 'guest.vehicles', 'itemsProvided', 'charges', 'payments']));
     }
 
@@ -132,6 +144,10 @@ class BookingController extends Controller
      */
     public function update(Request $request, Booking $booking)
     {
+        if (!$request->user()->canPermission('booking:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'guest.first_name' => 'sometimes|string|max:255',
             'check_in_date' => 'sometimes|date',
@@ -246,8 +262,12 @@ class BookingController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Booking $booking)
+    public function destroy(Request $request, Booking $booking)
     {
+        if (!$request->user()->canPermission('booking:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $booking->delete();
         return response()->noContent();
     }

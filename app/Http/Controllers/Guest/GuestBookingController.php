@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Guest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Booking;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\BookingConfirmationMail;
 
 class GuestBookingController extends Controller
 {
@@ -166,9 +168,21 @@ class GuestBookingController extends Controller
                 ];
             });
 
+            // Dispatch Confirmation Email for the first booking (usually only one per checkout transaction)
+            if (!empty($result['bookings'])) {
+                try {
+                    $mainBooking = $result['bookings'][0]->load(['guest', 'property']);
+                    Mail::to($mainBooking->guest->email)->send(new BookingConfirmationMail($mainBooking));
+                } catch (\Exception $e) {
+                    \Log::error("Booking Confirmation Email Error: " . $e->getMessage());
+                    // Don't fail the whole request if email fails, but log it
+                }
+            }
+
             return response()->json([
                 'message' => 'Booking created successfully',
                 'booking_reference' => $result['reference'],
+                'guest_portal_token' => $result['bookings'][0]->guest_portal_token ?? null,
             ], 201);
 
         } catch (\Exception $e) {

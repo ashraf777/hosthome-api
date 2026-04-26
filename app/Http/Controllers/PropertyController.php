@@ -12,9 +12,9 @@ class PropertyController extends Controller
 {
     public function index(Request $request)
     {
-        // if (!$request->user()->canPermission('property:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $properties = Property::with('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities')
             ->where('hosting_company_id', $request->user()->hosting_company_id)
@@ -25,9 +25,9 @@ class PropertyController extends Controller
 
     public function store(Request $request)
     {
-        // if (!$request->user()->canPermission('property:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'property_owner_id' => 'nullable|exists:property_owners,id',
@@ -66,13 +66,9 @@ class PropertyController extends Controller
 
     public function show(Request $request, Property $property)
     {
-        // if ($property->hosting_company_id !== $request->user()->hosting_company_id) {
-        //     return response()->json(['message' => 'Not Found'], 404);
-        // }
-
-        // if (!$request->user()->canPermission('property:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
         
         $property->load('owner', 'hostingCompany', 'propertyType', 'roomTypes', 'amenities');
 
@@ -85,9 +81,9 @@ class PropertyController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('property:update')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'property_owner_id' => 'nullable|exists:property_owners,id',
@@ -127,9 +123,9 @@ class PropertyController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('property:delete')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $property->delete();
 

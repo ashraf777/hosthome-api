@@ -45,9 +45,13 @@ use App\Http\Controllers\CleaningTeamController;
 use App\Http\Controllers\PresetTaskController;
 use App\Http\Controllers\Beds24Controller;
 
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MessageTemplateController;
+
 use App\Http\Controllers\Guest\GuestPropertyController;
 use App\Http\Controllers\Guest\GuestBookingController;
 use App\Http\Controllers\Guest\GuestLookupController;
+use App\Http\Controllers\GuestPortalController;
 
 // --- PUBLIC AUTH ROUTES (NO MIDDLEWARE) ---
 Route::post('register', [AuthController::class, 'register']);
@@ -55,6 +59,7 @@ Route::post('login', [AuthController::class, 'login']);
 
 // --- WEBHOOKS (Public) ---
 Route::post('webhooks/beds24/booking', [Beds24Controller::class, 'handleBookingWebhook']);
+Route::post('webhooks/beds24/message', [Beds24Controller::class, 'handleMessageWebhook']);
 
 // --- PROTECTED ROUTES ---
 // All routes within this group require a valid API token.
@@ -139,9 +144,22 @@ Route::middleware('api.token.check')->group(function () {
     Route::post('beds24/calendar/sync', [Beds24Controller::class, 'syncCalendar']);
     Route::post('beds24/calendar/price', [Beds24Controller::class, 'updatePrice']);
     Route::post('beds24/bookings/import', [Beds24Controller::class, 'bulkImportBookings']);
+    
+    // --- GUEST MESSAGING & INBOX ---
+    Route::post('message-templates/run-automations', [MessageTemplateController::class, 'runAutomations']);
+    Route::apiResource('message-templates', MessageTemplateController::class);
+    Route::get('messages', [MessageController::class, 'index']); // Get Inbox Bookings
+    Route::get('messages/{booking}/thread', [MessageController::class, 'thread']); // Get full conversation
+    Route::post('messages/{booking}/send', [MessageController::class, 'store']); // Send a manual reply
+
     Route::post('beds24/bookings/import-all', [Beds24Controller::class, 'bulkImportAllBookings']);
     
 });
+
+// --- PUBLIC GUEST PORTAL ---
+Route::get('guest-portal/{token}', [GuestPortalController::class, 'summary']);
+Route::get('guest-portal/{token}/messages', [GuestPortalController::class, 'messages']);
+Route::post('guest-portal/{token}/messages', [GuestPortalController::class, 'sendMessage']);
 
 // --- GUEST BOOKING ENGINE API (Public) ---
 Route::prefix('guest')->group(function () {
@@ -165,7 +183,7 @@ Route::get('/ping', function () {
     return response()->json([
         'status' => 'ok',
         'message' => 'Hosthome API',
-        'api_version' => '1.0.0',
+        'api_version' => '1.0.10',
         'build_version' => '1'
     ]);
 });

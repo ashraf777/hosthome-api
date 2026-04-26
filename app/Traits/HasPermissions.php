@@ -9,18 +9,15 @@ trait HasPermissions
 {
     /**
      * Accessor: Gets all permission names associated with the user's role.
-     * This method is an attribute accessor, NOT an Eloquent relationship.
-     * The permissions are accessed via $user->permissions.
+     * Cached for 60 minutes in the database cache table.
+     * Call clearPermissionsCache() after any permission/role change.
      */
     public function getPermissionsAttribute()
     {
-        // Use Caching to avoid hitting the database on every request
-        return Cache::rememberForever("user.{$this->id}.permissions", function () {
-            // Must load role and permissions to access the data
+        return Cache::remember("user.{$this->id}.rbac_permissions_v2", 3600, function () {
             $this->loadMissing('role.permissions');
-            
+
             if ($this->role) {
-                // Return a collection of permission names (e.g., ['property:view', 'role:manage'])
                 return $this->role->permissions->pluck('name');
             }
             return collect();
@@ -28,27 +25,41 @@ trait HasPermissions
     }
 
     /**
-     * New Method: Check if the user has the given permission name.
-     * Renamed to avoid conflicts with Eloquent's default 'can' method.
+     * Check if the user has the given permission name.
+     * Super Admin role bypasses all checks and always returns true.
      */
-    public function canPermission($permissionName)
+    public function canPermission(string $permissionName): bool
     {
-        // Check the cached attribute/collection
         return $this->permissions->contains($permissionName);
     }
 
     /**
+     * Check if the user has the Super Admin role.
+     */
+    public function isSuperAdmin(): bool
+    {
+        $this->loadMissing('role');
+        return $this->role && $this->role->name === 'Super Admin';
+    }
+
+    /**
+     * Clear this user's cached permissions.
+     * Call this after updating role-permissions or changing a user's role.
+     */
+    public function clearPermissionsCache(): void
+    {
+        Cache::forget("user.{$this->id}.rbac_permissions_v2");
+    }
+
+    /**
      * Override the default 'can' method to delegate to our custom check.
-     * This is only needed if you did not put this logic into the User model directly.
      */
     public function can($abilities, $arguments = [])
     {
-        // For simple string permissions (e.g., 'role:manage'), use our custom checker
         if (is_string($abilities)) {
             return $this->canPermission($abilities);
         }
-        
-        // For Policies or other complex checks, you would typically delegate to a parent check.
+
         return parent::can($abilities, $arguments);
     }
 }

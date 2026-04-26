@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\Role;
+use App\Models\User;
 use App\Http\Resources\RoleResource;
 
 class RoleController extends Controller
@@ -111,8 +112,13 @@ class RoleController extends Controller
 
         // --- END MANUAL SYNCHRONIZATION ---
 
+        // Clear the permission cache for ALL users that have this role
+        // so they see the updated permissions immediately.
+        User::where('role_id', $role->id)->each(function ($user) {
+            $user->clearPermissionsCache();
+        });
+
         // Reload role with permissions to confirm changes
-        // NOTE: You must ensure RoleResource is using the correct PermissionResource
         return new RoleResource($role->load('permissions'));
     }
 }

@@ -245,6 +245,29 @@ class Beds24Controller extends Controller
     }
 
     /**
+     * Handle inbound messages from Beds24.
+     */
+    public function handleMessageWebhook(Request $request)
+    {
+        try {
+            // Beds24 Auto Actions usually send JSON payloads.
+            $success = $this->beds24Service->handleInboundMessage($request->all());
+            
+            return response()->json([
+                'success' => $success,
+                'message' => $success ? 'Message processed successfully.' : 'Failed to process message or missing data.'
+            ], $success ? 200 : 400);
+
+        } catch (Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Beds24 Message Webhook Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Batch import bookings for a specific local property.
      */
     public function bulkImportBookings(Request $request)

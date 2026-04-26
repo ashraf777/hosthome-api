@@ -13,10 +13,9 @@ class PropertyReferenceController extends Controller
      */
     public function index(Request $request)
     {
-        // CORRECT: Permission Check
-        // if (!$request->user()->canPermission('property-reference:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-reference:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $references = PropertyReference::all();
 
@@ -29,10 +28,9 @@ class PropertyReferenceController extends Controller
      */
     public function store(Request $request)
     {
-        // CORRECT: Permission Check
-        // if (!$request->user()->canPermission('property-reference:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-reference:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'key' => 'required|string|max:255',
@@ -49,10 +47,9 @@ class PropertyReferenceController extends Controller
      */
     public function update(Request $request, PropertyReference $propertyReference)
     {
-        // CORRECT: Permission Check
-        // if (!$request->user()->canPermission('property-reference:update')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-reference:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $validated = $request->validate([
             'key' => 'sometimes|required|string|max:255',
@@ -69,10 +66,9 @@ class PropertyReferenceController extends Controller
      */
     public function destroy(Request $request, PropertyReference $propertyReference)
     {
-        // CORRECT: Permission Check
-        // if (!$request->user()->canPermission('property-reference:delete')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('property-reference:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         // Database FK constraint prevents deletion if properties use this reference.
         $propertyReference->delete();

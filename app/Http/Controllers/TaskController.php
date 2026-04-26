@@ -33,6 +33,10 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
+        if (!$request->user()->canPermission('task:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         // Basic filtering example (can be expanded)
         $tasks = Task::with(['property', 'roomType', 'unit', 'cleaningTeam', 'checklist', 'creator'])
             ->where('hosting_company_id', $request->user()->hosting_company_id)
@@ -47,6 +51,10 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->user()->canPermission('task:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'task_name' => 'required|string|max:255',
             'property_id' => 'nullable',
@@ -87,10 +95,14 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Task $task)
+    public function show(Request $request, Task $task)
     {
+        if (!$request->user()->canPermission('task:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         // Basic authorization check
-        if (request()->user()->hosting_company_id !== $task->hosting_company_id) {
+        if ($request->user()->hosting_company_id !== $task->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -102,6 +114,10 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
+        if (!$request->user()->canPermission('task:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         // Basic authorization check
         if ($request->user()->hosting_company_id !== $task->hosting_company_id) {
             abort(403, 'Unauthorized action.');
@@ -157,16 +173,20 @@ class TaskController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Task $task)
+    public function destroy(Request $request, Task $task)
     {
+        if (!$request->user()->canPermission('task:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         // Basic authorization check
-        if (request()->user()->hosting_company_id !== $task->hosting_company_id) {
+        if ($request->user()->hosting_company_id !== $task->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }
 
         TaskLog::create([
             'task_id' => $task->id,
-            'user_id' => request()->user()->id,
+            'user_id' => $request->user()->id,
             'status' => 4, // Custom status for 'deleted'
             'log_entry' => 'Task deleted.'
         ]);
@@ -181,6 +201,10 @@ class TaskController extends Controller
      */
     public function getLogs(Request $request, Task $task)
     {
+        if (!$request->user()->canPermission('task:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
         if ($request->user()->hosting_company_id !== $task->hosting_company_id) {
             abort(403, 'Unauthorized action.');
         }

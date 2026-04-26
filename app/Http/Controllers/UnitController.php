@@ -14,9 +14,9 @@ class UnitController extends Controller
      */
     public function index(Request $request)
     {
-        // if (!$request->user()->canPermission('unit:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('unit:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $hostingCompanyId = $request->user()->hosting_company_id;
     
@@ -44,9 +44,9 @@ class UnitController extends Controller
      */
     public function store(Request $request)
     {
-        // if (!$request->user() || !$request->user()->canPermission('unit:create')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('unit:create')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $hostingCompanyId = $request->user()->hosting_company_id;
 
@@ -86,14 +86,9 @@ class UnitController extends Controller
      */
     public function show(Request $request, Unit $unit)
     {
-        // Tenancy Check is now based on the direct property relationship
-        // if ($unit->property->hosting_company_id !== $request->user()->hosting_company_id) {
-        //     return response()->json(['message' => 'Not Found'], 404);
-        // }
-
-        // if (!$request->user()->canPermission('unit:view')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('unit:view')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $unit->load(['property', 'roomType', 'unitTypeRef', 'owner']);
 
@@ -110,9 +105,9 @@ class UnitController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('unit:update')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('unit:update')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $hostingCompanyId = $request->user()->hosting_company_id;
 
@@ -150,9 +145,9 @@ class UnitController extends Controller
             return response()->json(['message' => 'Not Found'], 404);
         }
 
-        // if (!$request->user()->canPermission('unit:delete')) {
-        //     return response()->json(['message' => 'This action is unauthorized.'], 403);
-        // }
+        if (!$request->user()->canPermission('unit:delete')) {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
 
         $unit->delete();
 
