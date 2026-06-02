@@ -264,13 +264,3 @@ Route::middleware('api.token.check')->group(function () {
     Route::get('cleaner/auth/pending-pins', [CleanerAuthController::class, 'pendingPins']);
 });
 
-Route::get('/view-logs', function () {
-    $path = storage_path('logs/laravel.log');
-    if (!file_exists($path)) {
-        return "Log file not found.";
-    }
-    $lines = file($path);
-    $lastLines = array_slice($lines, -150);
-    return response(implode("", $lastLines), 200, ['Content-Type' => 'text/plain']);
-});
-
