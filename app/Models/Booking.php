@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\Multitenant;
+
 class Booking extends Model
 {
-    use HasFactory;
+    use HasFactory, Multitenant;
     protected $guarded = ['id'];
 
     protected static function booted()

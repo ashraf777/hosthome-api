@@ -15,10 +15,6 @@ class HostingCompanyController extends Controller
      */
     public function index(Request $request)
     {
-        if (!$request->user()->canPermission('hosting-company:view')) {
-            return response()->json(['message' => 'This action is unauthorized.'], 403);
-        }
-
         $companies = HostingCompany::with(['country', 'plan'])->paginate(20);
         
         return JsonResource::collection($companies);
@@ -65,10 +61,6 @@ class HostingCompanyController extends Controller
      */
     public function show(Request $request, HostingCompany $hostingCompany)
     {
-        if (!$request->user()->canPermission('hosting-company:view')) {
-            return response()->json(['message' => 'This action is unauthorized.'], 403);
-        }
-
         return new JsonResource($hostingCompany->load(['country', 'plan']));
     }
 

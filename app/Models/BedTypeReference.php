@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\Multitenant;
+
 class BedTypeReference extends Model
 {
-    use HasFactory;
+    use HasFactory, Multitenant;
     
     // Define the table name explicitly
     protected $table = 'bed_type_references';

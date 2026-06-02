@@ -11,11 +11,12 @@ class GuestPropertyController extends Controller
     /**
      * Display a listing of public active properties.
      */
-    public function index(Request $request)
+    public function index(Request $request, $company_slug)
     {
         $checkIn = $request->input('check_in');
         $checkOut = $request->input('check_out');
         $guests = (int) $request->input('guests', 1);
+        $companyId = $request->attributes->get('hosting_company_id');
 
         $query = Property::with([
             'photos',
@@ -52,7 +53,8 @@ class GuestPropertyController extends Controller
                 }]);
             }, 
             'amenities.amenityReference'
-        ])->where('status', 1)
+        ])->where('hosting_company_id', $companyId)
+          ->where('status', 1)
           ->where('listing_status', 'active');
           
         // 1. Location Search
@@ -96,14 +98,12 @@ class GuestPropertyController extends Controller
         return response()->json($properties);
     }
 
-    /**
-     * Display the specified public property.
-     */
-    public function show(Request $request, $id)
+    public function show(Request $request, $company_slug, $id)
     {
         $checkIn = $request->input('check_in');
         $checkOut = $request->input('check_out');
-
+        $companyId = $request->attributes->get('hosting_company_id');
+ 
         $property = Property::with([
             'photos',
             'roomTypes' => function ($query) use ($checkIn, $checkOut) {
@@ -119,7 +119,7 @@ class GuestPropertyController extends Controller
                         });
                     });
                 }
-
+ 
                 $query->with(['photos', 'amenities.amenityReference', 'units' => function($uQuery) use ($checkIn, $checkOut) {
                     if ($checkIn && $checkOut) {
                         $uQuery->whereNotIn('id', function ($subQuery) use ($checkIn, $checkOut) {
@@ -134,7 +134,8 @@ class GuestPropertyController extends Controller
                 }]);
             }, 
             'amenities.amenityReference',
-        ])->where('status', 1) // Ensure it is an active property
+        ])->where('hosting_company_id', $companyId)
+          ->where('status', 1) // Ensure it is an active property
           ->where('listing_status', 'active')
           ->findOrFail($id);
           

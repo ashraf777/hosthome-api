@@ -15,11 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // --- ADD THE CUSTOM ALIASES HERE ---
         $middleware->alias([
             // Alias for your custom, package-free authentication middleware
-            'api.token.check' => App\Http\Middleware\CheckApiToken::class, 
-            
+            'api.token.check'     => App\Http\Middleware\CheckApiToken::class,
+
+            // Cleaner app token authentication (validates Staff/Cleaner role)
+            'cleaner.token.check' => App\Http\Middleware\CleanerTokenCheck::class,
+
+            // Tenant by slug middleware
+            'tenant.slug' => App\Http\Middleware\SetTenantBySlug::class,
+
             // Register the Laravel built-in 'can' middleware for authorization checks
             // This is crucial for using ->middleware('can:role:manage') in your routes
-            'can' => Illuminate\Auth\Middleware\Authorize::class, 
+            'can' => Illuminate\Auth\Middleware\Authorize::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

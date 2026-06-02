@@ -20,17 +20,22 @@ class UnitController extends Controller
 
         $hostingCompanyId = $request->user()->hosting_company_id;
     
-        // 1. Get the room_type_id from the query parameters
+        // 1. Get filters from query parameters
         $roomTypeId = $request->query('room_type_id');
+        $propertyId = $request->query('property_id');
 
         // 2. Start the query with the company filter
         $query = Unit::whereHas('property', function ($query) use ($hostingCompanyId) {
             $query->where('hosting_company_id', $hostingCompanyId);
         });
 
-        // 3. Conditionally apply the room type filter
+        // 3. Apply filters
         if ($roomTypeId) {
             $query->where('room_type_id', $roomTypeId);
+        }
+
+        if ($propertyId) {
+            $query->where('property_id', $propertyId);
         }
 
         // 4. Continue with relationships and pagination

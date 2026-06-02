@@ -54,10 +54,13 @@ class AuthController extends Controller
              return response()->json(['message' => 'Account is inactive or suspended.'], 403);
         }
 
-        // Generate and store a custom access_token
-        $token = Str::random(64);
-        $user->access_token = $token;
-        $user->save();
+        // Reuse existing access_token or generate a new one
+        $token = $user->access_token;
+        if (empty($token)) {
+            $token = Str::random(64);
+            $user->access_token = $token;
+            $user->save();
+        }
         
         return response()->json([
             'access_token' => $token,

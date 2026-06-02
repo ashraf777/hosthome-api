@@ -51,7 +51,7 @@ class UserController extends Controller
              return response()->json(['message' => 'This action is unauthorized. Permission platform:manage required.'], 403);
         }
 
-        $companyId = $request->attributes->get('hosting_company_id');
+        $companyId = $request->attributes->get('hosting_company_id') ?? $request->user()->hosting_company_id;
 
         $users = User::where('hosting_company_id', $companyId)
             ->with(['role', 'hostingCompany'])
@@ -71,7 +71,7 @@ class UserController extends Controller
         }
 
         // Authorization check: Ensure user belongs to the same tenant
-        $companyId = $request->attributes->get('hosting_company_id');
+        $companyId = $request->attributes->get('hosting_company_id') ?? $request->user()->hosting_company_id;
         if ($user->hosting_company_id !== $companyId) {
             return response()->json(['message' => 'User not found in tenant context.'], 404);
         }
@@ -87,5 +87,19 @@ class UserController extends Controller
         $user->clearPermissionsCache();
 
         return new UserResource($user->load(['role', 'hostingCompany']));
+    }
+
+    /**
+     * PUT /api/user/fcm-token
+     */
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'required|string',
+        ]);
+
+        $request->user()->update(['fcm_token' => $request->fcm_token]);
+
+        return response()->json(['message' => 'FCM token updated successfully.']);
     }
 }

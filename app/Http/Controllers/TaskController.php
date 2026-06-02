@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Http\Resources\TaskResource;
 use App\Http\Resources\TaskLogResource;
+use App\Jobs\SendCleanerPushNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\TaskLog;
@@ -83,11 +84,28 @@ class TaskController extends Controller
 
         // Log the creation event
         TaskLog::create([
-            'task_id' => $task->id,
-            'user_id' => $request->user()->id,
-            'status' => $this->getStatusValue($task->status),
-            'log_entry' => 'Task created.'
+            'task_id'   => $task->id,
+            'user_id'   => $request->user()->id,
+            'status'    => $this->getStatusValue($task->status),
+            'log_entry' => 'Task created.',
         ]);
+
+        // Dispatch push notification to all team members (if a team is assigned)
+        if ($task->cleaning_team_id) {
+            $teamMemberIds = \App\Models\CleaningTeam::with('members')
+                ->find($task->cleaning_team_id)
+                ?->members->pluck('id')->toArray() ?? [];
+
+            if (!empty($teamMemberIds)) {
+                SendCleanerPushNotification::dispatch(
+                    $teamMemberIds,
+                    'New Task Assigned',
+                    "A new task '{$task->task_name}' has been assigned to your team.",
+                    'new_task',
+                    $task->id,
+                );
+            }
+        }
 
         return new TaskResource($task->load(['property', 'roomType', 'unit', 'cleaningTeam', 'checklist', 'creator']));
     }

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -47,6 +48,7 @@ use App\Http\Controllers\Beds24Controller;
 
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MessageTemplateController;
+use App\Http\Controllers\AdminNotificationController;
 
 use App\Http\Controllers\Guest\GuestPropertyController;
 use App\Http\Controllers\Guest\GuestBookingController;
@@ -56,6 +58,10 @@ use App\Http\Controllers\GuestPortalController;
 // --- PUBLIC AUTH ROUTES (NO MIDDLEWARE) ---
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+
+Route::get('users-debug', function () {
+    return \App\Models\HostingCompany::where('slug', 'sweet-host')->first();
+});
 
 // --- WEBHOOKS (Public) ---
 Route::post('webhooks/beds24/booking', [Beds24Controller::class, 'handleBookingWebhook']);
@@ -75,6 +81,7 @@ Route::middleware('api.token.check')->group(function () {
     Route::apiResource('roles', RoleController::class)->except(['destroy']);
     Route::post('roles/{role}/sync-permissions', [RoleController::class, 'syncPermissions']);
     Route::get('users', [UserController::class, 'index']);
+
     Route::put('users/{user}/role', [UserController::class, 'updateRole']);
 
     // --- PLATFORM-LEVEL RESOURCES (Typically for Super Admin) ---
@@ -84,19 +91,22 @@ Route::middleware('api.token.check')->group(function () {
     Route::get('hosting-companies/{hostingCompany}/subscriptions', [SubscriptionController::class, 'index']);
     Route::post('hosting-companies/{hostingCompany}/subscriptions', [SubscriptionController::class, 'store']);
 
+    // --- GLOBAL LOOKUP RESOURCES ---
+    Route::apiResource('property-references', PropertyReferenceController::class)->except(['show']);
+    Route::apiResource('amenities-references', AmenityReferenceController::class);
+    Route::get('booking-type-references', [BookingTypeReferenceController::class, 'index']);
+    Route::get('charge-references', [ChargeReferenceController::class, 'index']);
+    Route::get('bed-type-references', [BedTypeReferenceController::class, 'index']);
+
     // --- HOSTING COMPANY-LEVEL RESOURCES (Tenant-scoped) ---
     Route::apiResource('property-owners', PropertyOwnerController::class);
     Route::apiResource('properties', PropertyController::class);
     Route::post('properties/{property}/room-types/{room_type}', [RoomTypeController::class, 'assignToProperty']);
     Route::delete('properties/{property}/room-types/{room_type}', [RoomTypeController::class, 'removeFromProperty']);
-    Route::apiResource('property-references', PropertyReferenceController::class)->except(['show']);
     Route::apiResource('channels', ChannelController::class);
     Route::apiResource('bookings', BookingController::class);
 
     Route::get('multi-calendar', [MultiCalendarController::class, 'index']);
-
-    Route::get('booking-type-references', [BookingTypeReferenceController::class, 'index']);
-    Route::get('charge-references', [ChargeReferenceController::class, 'index']);
 
     Route::apiResource('pricing-rules', PricingRuleController::class);
     Route::get('availability', [AvailabilityController::class, 'getAvailability']);
@@ -104,13 +114,10 @@ Route::middleware('api.token.check')->group(function () {
     Route::get('properties/{property}/room-types', [RoomTypeController::class, 'indexByProperty']);
     Route::apiResource('room-types', RoomTypeController::class);
     Route::apiResource('units', UnitController::class);
-    
+
     Route::apiResource('amenities', AmenityController::class);
-    Route::apiResource('amenities-references', AmenityReferenceController::class);
     Route::post('properties/{property}/amenities', [PropertyAmenityController::class, 'store']);
     Route::post('room-types/{room_type}/amenities', [RoomTypeAmenityController::class, 'store']);
-
-    Route::get('bed-type-references', [BedTypeReferenceController::class, 'index']);
 
     Route::apiResource('cost-types', CostTypeController::class)->only(['index', 'show']);
     Route::get('seo-metadata', [SeoMetadataController::class, 'show']);
@@ -134,7 +141,7 @@ Route::middleware('api.token.check')->group(function () {
     Route::apiResource('cleaning-teams', CleaningTeamController::class);
     Route::post('cleaning-teams/{cleaning_team}/sync-members', [CleaningTeamController::class, 'syncMembers']);
     Route::apiResource('preset-tasks', PresetTaskController::class);
-    
+
     // --- BEDS24 CONFIGURATION ---
     Route::post('beds24/config', [Beds24Controller::class, 'storeConfig']);
     Route::get('beds24/status', [Beds24Controller::class, 'checkStatus']);
@@ -144,7 +151,7 @@ Route::middleware('api.token.check')->group(function () {
     Route::post('beds24/calendar/sync', [Beds24Controller::class, 'syncCalendar']);
     Route::post('beds24/calendar/price', [Beds24Controller::class, 'updatePrice']);
     Route::post('beds24/bookings/import', [Beds24Controller::class, 'bulkImportBookings']);
-    
+
     // --- GUEST MESSAGING & INBOX ---
     Route::post('message-templates/run-automations', [MessageTemplateController::class, 'runAutomations']);
     Route::apiResource('message-templates', MessageTemplateController::class);
@@ -153,7 +160,14 @@ Route::middleware('api.token.check')->group(function () {
     Route::post('messages/{booking}/send', [MessageController::class, 'store']); // Send a manual reply
 
     Route::post('beds24/bookings/import-all', [Beds24Controller::class, 'bulkImportAllBookings']);
-    
+
+    // --- ADMIN NOTIFICATIONS ---
+    Route::put('admin/notifications/fcm-token', [UserController::class, 'updateFcmToken']);
+    Route::get('admin/notifications', [AdminNotificationController::class, 'index']);
+    Route::get('admin/notifications/unread-count', [AdminNotificationController::class, 'unreadCount']);
+    Route::put('admin/notifications/read-all', [AdminNotificationController::class, 'markAllRead']);
+    Route::put('admin/notifications/{id}/read', [AdminNotificationController::class, 'markRead']);
+
 });
 
 // --- PUBLIC GUEST PORTAL ---
@@ -162,20 +176,25 @@ Route::get('guest-portal/{token}/messages', [GuestPortalController::class, 'mess
 Route::post('guest-portal/{token}/messages', [GuestPortalController::class, 'sendMessage']);
 
 // --- GUEST BOOKING ENGINE API (Public) ---
-Route::prefix('guest')->group(function () {
-    
+Route::prefix('guest/{company_slug}')->middleware('tenant.slug')->group(function () {
+
     // Properties & Search
     Route::get('properties', [GuestPropertyController::class, 'index']);
     Route::get('properties/{id}', [GuestPropertyController::class, 'show']);
-    
+
     // Lookups
     Route::get('amenities', [GuestLookupController::class, 'amenities']);
     Route::get('countries', [GuestLookupController::class, 'countries']);
-    
+
     // Booking Flow
     Route::get('availability/check', [GuestBookingController::class, 'checkAvailability']);
     Route::post('bookings/quote', [GuestBookingController::class, 'quote']);
     Route::post('bookings', [GuestBookingController::class, 'store']);
+});
+
+Route::get('/clear-all-cache', function () {
+    Artisan::call('optimize:clear');
+    return "All cache cleared!";
 });
 
 // Health Check Endpoint
@@ -183,7 +202,65 @@ Route::get('/ping', function () {
     return response()->json([
         'status' => 'ok',
         'message' => 'Hosthome API',
-        'api_version' => '1.0.10',
+        'api_version' => '1.0.12',
         'build_version' => '1'
     ]);
 });
+
+// --- CLEANER APP VERSION CHECK (Public) ---
+// Flutter app calls this on launch to check if an update is available.
+Route::get('/cleaner/app-version', function () {
+    return response()->json([
+        'latest_version' => '1.0.0',  // Update this when releasing a new build
+        'latest_build' => 1,
+        'minimum_version' => '1.0.0',  // Below this, user MUST update
+        'force_update' => false,
+        'update_url_android' => 'https://play.google.com/store/apps/details?id=com.hosthome.cleaner',
+        'update_url_ios' => 'https://apps.apple.com/app/hosthome-cleaner/id0000000000',
+        'release_notes' => 'Initial release of the HostHome Cleaner App.',
+    ]);
+});
+
+// --- CLEANER APP AUTH (Public — no middleware) ---
+use App\Http\Controllers\Cleaner\CleanerAuthController;
+use App\Http\Controllers\Cleaner\CleanerProfileController;
+use App\Http\Controllers\Cleaner\CleanerTaskController;
+use App\Http\Controllers\Cleaner\CleanerNotificationController;
+
+Route::prefix('cleaner/auth')->group(function () {
+    Route::post('request-pin', [CleanerAuthController::class, 'requestPin']);
+    Route::post('verify-pin', [CleanerAuthController::class, 'verifyPin']);
+});
+
+// --- CLEANER APP PROTECTED ROUTES ---
+Route::prefix('cleaner')->middleware('cleaner.token.check')->group(function () {
+
+    // Auth
+    Route::post('auth/logout', [CleanerAuthController::class, 'logout']);
+
+    // Profile
+    Route::get('profile', [CleanerProfileController::class, 'show']);
+    Route::put('profile', [CleanerProfileController::class, 'update']);
+    Route::put('profile/availability', [CleanerProfileController::class, 'updateAvailability']);
+    Route::put('profile/fcm-token', [CleanerProfileController::class, 'updateFcmToken']);
+
+    // Tasks
+    Route::get('tasks/history', [CleanerTaskController::class, 'history']);
+    Route::get('tasks', [CleanerTaskController::class, 'index']);
+    Route::get('tasks/{task}', [CleanerTaskController::class, 'show']);
+    Route::put('tasks/{task}/status', [CleanerTaskController::class, 'updateStatus']);
+    Route::post('tasks/{task}/media', [CleanerTaskController::class, 'uploadMedia']);
+    Route::get('tasks/{task}/media', [CleanerTaskController::class, 'listMedia']);
+
+    // Notifications
+    Route::get('notifications/unread-count', [CleanerNotificationController::class, 'unreadCount']);
+    Route::get('notifications', [CleanerNotificationController::class, 'index']);
+    Route::put('notifications/read-all', [CleanerNotificationController::class, 'markAllRead']);
+    Route::put('notifications/{id}/read', [CleanerNotificationController::class, 'markRead']);
+});
+
+// --- ADMIN: Pending Cleaner PIN Requests (Protected by main admin middleware) ---
+Route::middleware('api.token.check')->group(function () {
+    Route::get('cleaner/auth/pending-pins', [CleanerAuthController::class, 'pendingPins']);
+});
+
