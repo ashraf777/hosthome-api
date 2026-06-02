@@ -120,29 +120,6 @@ class BookingController extends Controller
                 return $booking->load(['guest.vehicles', 'itemsProvided', 'charges', 'payments']);
             });
 
-            // Dispatch push notification to admins of this hosting company
-            try {
-                $adminIds = \App\Models\User::where('hosting_company_id', $result->hosting_company_id)
-                    ->whereHas('role', function ($q) {
-                        $q->where('name', '!=', 'Staff/Cleaner');
-                    })
-                    ->pluck('id')
-                    ->toArray();
-
-                if (!empty($adminIds)) {
-                    $guestName = $result->guest ? ($result->guest->first_name . ' ' . ($result->guest->last_name ?? '')) : 'Guest';
-                    \App\Jobs\SendPushNotification::dispatch(
-                        $adminIds,
-                        'New Booking Created',
-                        "Booking for {$guestName} from " . date('M d', strtotime($result->check_in_date)) . " to " . date('M d', strtotime($result->check_out_date)),
-                        'booking',
-                        $result->id
-                    );
-                }
-            } catch (\Exception $ex) {
-                \Log::error("Failed dispatching new booking notification: " . $ex->getMessage());
-            }
-
             return response()->json($result, 201);
 
         } catch (\Exception $e) {

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Traits\Multitenant;
+use App\Models\User;
 
 class Booking extends Model
 {
@@ -17,6 +18,30 @@ class Booking extends Model
         static::creating(function ($booking) {
             if (empty($booking->guest_portal_token)) {
                 $booking->guest_portal_token = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+
+        static::created(function ($booking) {
+            try {
+                $adminIds = User::where('hosting_company_id', $booking->hosting_company_id)
+                    ->whereHas('role', function ($q) {
+                        $q->where('name', '!=', 'Staff/Cleaner');
+                    })
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($adminIds)) {
+                    $guestName = $booking->guest ? ($booking->guest->first_name . ' ' . ($booking->guest->last_name ?? '')) : 'Guest';
+                    \App\Jobs\SendPushNotification::dispatch(
+                        $adminIds,
+                        'New Booking Created',
+                        "Booking for {$guestName} from " . date('M d', strtotime($booking->check_in_date)) . " to " . date('M d', strtotime($booking->check_out_date)),
+                        'booking',
+                        $booking->id
+                    );
+                }
+            } catch (\Exception $ex) {
+                \Log::error("Failed dispatching new booking notification: " . $ex->getMessage());
             }
         });
     }

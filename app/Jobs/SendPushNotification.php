@@ -12,7 +12,7 @@ use App\Models\UserNotification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class SendPushNotification implements ShouldQueue
+class SendPushNotification
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
