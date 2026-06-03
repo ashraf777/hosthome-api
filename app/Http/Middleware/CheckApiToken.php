@@ -17,7 +17,9 @@ class CheckApiToken
             return response()->json(['message' => 'Authentication token missing.'], 401);
         }
 
-        $user = User::where('access_token', $token)->first();
+        $user = User::where('access_token', $token)
+            ->orWhere('mobile_access_token', $token)
+            ->first();
 
         if (!$user) {
             return response()->json(['message' => 'Invalid or expired access token.'], 401);

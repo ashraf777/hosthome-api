@@ -54,12 +54,22 @@ class AuthController extends Controller
              return response()->json(['message' => 'Account is inactive or suspended.'], 403);
         }
 
-        // Reuse existing access_token or generate a new one
-        $token = $user->access_token;
-        if (empty($token)) {
-            $token = Str::random(64);
-            $user->access_token = $token;
-            $user->save();
+        // Determine if logging in from mobile or web admin
+        if ($request->input('device_name') === 'mobile_app') {
+            $token = $user->mobile_access_token;
+            if (empty($token)) {
+                $token = Str::random(64);
+                $user->mobile_access_token = $token;
+                $user->save();
+            }
+        } else {
+            // Reuse existing access_token or generate a new one (Web Admin)
+            $token = $user->access_token;
+            if (empty($token)) {
+                $token = Str::random(64);
+                $user->access_token = $token;
+                $user->save();
+            }
         }
         
         return response()->json([
@@ -73,7 +83,12 @@ class AuthController extends Controller
     {
         $user = $request->user();
         if ($user) {
-            $user->access_token = null;
+            $token = $request->bearerToken();
+            if ($user->mobile_access_token === $token) {
+                $user->mobile_access_token = null;
+            } else {
+                $user->access_token = null;
+            }
             $user->save();
         }
         return response()->json(['message' => 'Successfully logged out.'], 200);
